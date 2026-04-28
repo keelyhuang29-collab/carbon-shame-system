@@ -1,0 +1,3311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Carbon Shame System</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Nunito:wght@400;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #f0e6d3;
+    font-family: 'Nunito', sans-serif;
+    color: #4a3728;
+    image-rendering: pixelated;
+  }
+  /* CRT overlay removed for cute style */
+
+  #stage {
+    position: relative;
+    width: 100vw; height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    grid-template-rows: 44px 1fr;
+  }
+
+  /* TOPBAR */
+  #topbar {
+    grid-column: 1 / -1;
+    background: #7ec8a0;
+    border-bottom: 2px solid #d4c4a8;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    color: #4a3728;
+  }
+  #topbar > * { flex-shrink: 0; }
+  .logo { color: #5a4030; font-weight: bold; letter-spacing: 2px; }
+  .logo::before { content: '◉ '; color: #e87461; animation: blink 1.2s infinite; }
+  @keyframes blink { 50% { opacity: 0.2; } }
+  .plate-tag {
+    background: #f5e680; color: #4a3728;
+    padding: 2px 8px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 9px;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .ts { color: #8a7a6a; margin-left: auto; margin-right: 6px; font-size: 15px; }
+  .sound-btn {
+    border-radius: 12px;
+    background: transparent;
+    border: 1px solid #c4b49e;
+    color: #f5c542;
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    padding: 2px 10px;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+  .sound-btn:hover { background: #d4c4a8; }
+  .sound-btn.off { color: #b0a090; }
+
+  /* WORLD */
+  /* WORLD */
+  #world {
+    grid-row: 2 / 3;
+    grid-column: 1 / 2;
+    position: relative;
+    background: #8ed1a0;
+    overflow: hidden;
+    cursor: default;
+  }
+  .grass {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 10% 20%, #7bc48d 0 2px, transparent 3px),
+      radial-gradient(circle at 30% 70%, #7bc48d 0 2px, transparent 3px),
+      radial-gradient(circle at 60% 40%, #7bc48d 0 2px, transparent 3px),
+      radial-gradient(circle at 80% 85%, #7bc48d 0 2px, transparent 3px),
+      linear-gradient(180deg, #8ed1a0 0%, #a8e0b8 100%);
+    background-size: 80px 80px, 90px 90px, 70px 70px, 100px 100px, 100% 100%;
+  }
+  .road { position: absolute; background: #d4c4a8; box-shadow: inset 0 0 0 2px #c4b49e; }
+  .road.h { height: 60px; left: 0; right: 0; }
+  .road.v { width: 60px; top: 0; bottom: 0; }
+  .road-line {
+    position: absolute;
+    background: repeating-linear-gradient(90deg, #d4dc42 0 18px, transparent 18px 36px);
+    height: 2px;
+  }
+  .road-line.v {
+    width: 2px; height: auto;
+    background: repeating-linear-gradient(0deg, #d4dc42 0 18px, transparent 18px 36px);
+  }
+
+  .location {
+    position: absolute;
+    cursor: pointer;
+    transition: transform 0.15s;
+    filter: drop-shadow(0 4px 0 rgba(0,0,0,0.15));
+  }
+  .location:hover { transform: translateY(-4px) scale(1.02); }
+  .location svg { display: block; }
+  .sign {
+    position: absolute;
+    top: -30px; left: 50%;
+    transform: translateX(-50%);
+    background: #fff8ef;
+    color: #5db87a;
+    padding: 5px 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    white-space: nowrap;
+    border: 2px solid #c4b49e;
+    border-radius: 10px;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  .hint {
+    position: absolute;
+    bottom: -24px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(232,116,97,0.9); border-radius: 8px;
+    color: #fff;
+    padding: 4px 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 17px;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+    font-weight: bold;
+  }
+  .location:hover .hint { opacity: 1; }
+
+  /* Ambient world props */
+  .prop {
+    position: absolute;
+    pointer-events: none;
+    filter: drop-shadow(0 3px 0 rgba(0,0,0,0.1));
+  }
+  .prop.tree svg { animation: sway 4s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes sway { 0%,100% { transform: rotate(-1.2deg); } 50% { transform: rotate(1.2deg); } }
+
+  #walker {
+    position: absolute;
+    width: 20px; height: 28px;
+    z-index: 50;
+    pointer-events: none;
+  }
+  #walker .shadow {
+    position: absolute;
+    bottom: -2px; left: 50%;
+    transform: translateX(-50%);
+    width: 16px; height: 4px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 50%;
+    filter: blur(1px);
+  }
+  #walker .sprite { position: relative; width: 100%; height: 100%; }
+  .px { position: absolute; width: 2px; height: 2px; }
+
+  .npc {
+    position: absolute;
+    width: 16px; height: 22px;
+    z-index: 40;
+    transition: left 2s, top 2s;
+  }
+  .npc .head { position: absolute; top: 0; left: 3px; width: 10px; height: 10px; background: #d4a574; }
+  .npc .body { position: absolute; top: 10px; left: 2px; width: 12px; height: 10px; background: var(--shirt, #5b7a6a); }
+  .npc .legs { position: absolute; top: 18px; left: 3px; width: 10px; height: 4px; background: #2a2a2a; }
+  .npc.watching::after {
+    content: '👁';
+    position: absolute;
+    top: -16px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    animation: watch 0.6s infinite alternate;
+  }
+  @keyframes watch {
+    0% { transform: translateX(-50%) scale(1); }
+    100% { transform: translateX(-50%) scale(1.3); }
+  }
+  .npc .chat-bubble {
+    position: absolute;
+    bottom: 26px; left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    color: #4a3728;
+    padding: 5px 9px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    white-space: nowrap;
+    border-radius: 6px;
+    animation: bubble 4s forwards;
+    pointer-events: none;
+    z-index: 60;
+  }
+  .npc .chat-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 50%;
+    width: 6px; height: 6px;
+    background: #fff;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  @keyframes bubble {
+    0% { opacity: 0; transform: translateX(-50%) translateY(4px); }
+    8%, 90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  }
+
+  .ripple {
+    position: absolute;
+    border: 2px solid #d4dc42;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: ripple 0.6s ease-out forwards;
+  }
+  @keyframes ripple {
+    0% { width: 0; height: 0; opacity: 1; }
+    100% { width: 30px; height: 30px; margin: -15px 0 0 -15px; opacity: 0; }
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    grid-row: 2 / 4;
+    grid-column: 2 / 3;
+    background: #faf4e8; border-radius: 0;
+    border-left: 2px solid #d4c4a8;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    min-height: 0;
+  }
+  #sidebar > div { flex-shrink: 0; }
+  #sidebar > div.chat-wrap { flex: 1 1 auto; min-height: 180px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+  .panel-title {
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    color: #7a6a5a;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px dashed #d4c4a8;
+    padding-bottom: 3px;
+    margin-bottom: 4px;
+    font-weight: bold;
+  }
+  .rating-card { border-radius: 12px;
+    background: #f0e6d3;
+    border: 1px solid #d4c4a8;
+    padding: 6px 10px 8px;
+    text-align: center;
+  }
+  .rating-grade {
+    font-family: 'Nunito', sans-serif;
+    font-size: 32px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 16px currentColor;
+    margin: 2px 0;
+  }
+  .rating-label {
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    color: #4a3728;
+    letter-spacing: 1px;
+    font-weight: bold;
+  }
+  .rating-bar { border-radius: 4px;
+    height: 7px;
+    background: #e8dcc8;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .rating-bar-fill { border-radius: 4px;
+    height: 100%;
+    background: linear-gradient(90deg, #8fd87a, #d4dc42, #f39c12, #f4837a);
+    transition: width 0.5s;
+  }
+  /* Carbon framing */
+  .budget-row {
+    margin-top: 4px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    flex-wrap: nowrap;
+  }
+  .budget-row .l { color: #7a6a5a; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .budget-row .v { color: #4a3728; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
+  .budget-row .v.bad { color: #f09080; }
+  .budget-row .v.ok { color: #5db87a; }
+  .impact-box {
+    margin-top: 6px;
+    padding: 5px 8px;
+    background: #f5efe3;
+    border: 1px solid #d4c4a8;
+    border-left: 3px solid #f4837a;
+    text-align: left;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    line-height: 1.25;
+    color: #4a3728;
+  }
+  .impact-box .big {
+    display: block;
+    font-family: 'Nunito', sans-serif;
+    font-size: 10px;
+    color: #f09080;
+    margin-bottom: 3px;
+    letter-spacing: 1px;
+  }
+  .impact-box .bears {
+    display: flex;
+    gap: 2px;
+    margin-top: 3px;
+    font-size: 16px;
+    flex-wrap: wrap;
+  }
+  .impact-box .bears .b {
+    filter: none;
+    transition: filter 0.4s;
+  }
+  .impact-box .bears .b.dead {
+    filter: grayscale(1) brightness(0.7);
+    opacity: 0.45;
+  }
+  .impact-box .bears .b.dying {
+    filter: sepia(1) hue-rotate(-40deg) saturate(4);
+    animation: shudder 0.6s infinite;
+  }
+  @keyframes shudder {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(-1px); }
+  }
+  .stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 18px;
+    padding: 4px 0;
+    border-bottom: 1px dotted #d4c4a8;
+  }
+  .stat .l { color: #7a6a5a; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stat .v { color: #4a3728; font-weight: bold; white-space: nowrap; flex-shrink: 0; font-size: 19px; }
+  .stat .v.bad { color: #f09080; }
+
+  /* BLOCK FEED — redesigned as chat */
+  .feed {
+    background: #e8dcc8;
+    border: 1px solid #d4c4a8;
+    padding: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 17px;
+    flex: 1 1 auto;
+    min-height: 140px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .msg { border-radius: 8px;
+    background: #7ec8a0;
+    padding: 7px 11px;
+    border-radius: 4px 10px 10px 10px;
+    max-width: 94%;
+    opacity: 0;
+    animation: msg-in 0.3s forwards;
+    line-height: 1.3;
+  }
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateX(-4px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .msg .who {
+    display: block;
+    font-size: 14px;
+    color: #5db87a;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  .msg .who.sys { color: #f5c542; }
+  .msg .text { color: #4a3728; font-size: 17px; }
+  .msg.system { background: #fef0ee; border-left: 3px solid #f4837a; border-radius: 0; }
+  .msg.system .who { color: #f09080; }
+
+  .foot {
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    color: #b0a090;
+    text-align: center;
+    padding-top: 6px;
+    border-top: 1px dashed #d4c4a8;
+    line-height: 1.4;
+  }
+
+  /* Rank board */
+  .rank-board { border-radius: 10px;
+    background: #e8dcc8;
+    border: 1px solid #d4c4a8;
+    padding: 4px 8px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    max-height: none;
+    overflow: visible;
+  }
+  .rank-board.expanded .rank-scroll { max-height: 240px; overflow-y: auto; }
+  .rank-scroll { max-height: 90px; overflow: hidden; }
+  .rank-toggle {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-top: 1px dashed #d4c4a8;
+    color: #f5c542;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    padding: 5px 0 2px;
+    cursor: pointer;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+  .rank-toggle:hover { color: #4a3728; }
+  .rank-row.divider {
+    border-top: 1px dashed #c4b49e;
+    margin-top: 3px;
+    padding-top: 6px;
+  }
+  .rank-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 4px;
+    border-bottom: 1px dotted #d4c4a8;
+  }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-row .pos { color: #b0a090; width: 22px; font-weight: bold; font-size: 14px; }
+  .rank-row .who {
+    flex: 1; color: #7a6a5a;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-size: 16px;
+    line-height: 1.15;
+  }
+  .rank-row .who small { font-size: 12px; color: #b0a090; display: block; line-height: 1.1; }
+  .rank-row .kg { color: #5db87a; font-weight: bold; white-space: nowrap; font-size: 16px; }
+  .rank-row .kg.mid { color: #f5c542; }
+  .rank-row .kg.bad { color: #f09080; }
+  .rank-row.me { background: #fef0ee; border-left: 3px solid #f4837a; margin: 2px -4px; padding-left: 7px; }
+  .rank-row.me .who { color: #4a3728; font-weight: bold; }
+  .rank-row .medal { font-size: 14px; }
+
+  /* BILLBOARD — above world */
+  #billboard {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    width: 86%;
+    max-width: 540px;
+    background: #fff8ef;
+    border: 2px solid #d4c4a8;
+    border-radius: 12px;
+    padding: 6px 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  #billboard::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: none;
+    pointer-events: none;
+  }
+  .bb-label {
+    font-family: 'Nunito', sans-serif;
+    font-size: 9px;
+    color: #f09080;
+    letter-spacing: 1px;
+    padding: 3px 6px;
+    border: 2px solid #f4837a;
+    flex-shrink: 0;
+    animation: flash 1.2s infinite;
+    text-align: center;
+    line-height: 1.3;
+    align-self: center;
+  }
+  .bb-marquee {
+    flex: 1;
+    height: 40px;
+    background: #f5efe3;
+    border: 1px solid #d4c4a8;
+    position: relative;
+    overflow: hidden;
+    margin-left: 8px;
+  }
+  .bb-track {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    animation: bb-scroll 26s linear infinite;
+    white-space: nowrap;
+    width: max-content;
+  }
+  .bb-item { flex-shrink: 0; }
+  @keyframes bb-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .bb-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 22px;
+    color: #4a3728;
+  }
+  .bb-item .rank {
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    color: #f09080;
+  }
+  .bb-item .name { color: #4a3728; font-weight: bold; }
+  .bb-item .kg {
+    color: #f09080;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    background: #fff0ee;
+    padding: 3px 7px;
+    border: 1px solid #f4a89a;
+  }
+  .bb-item .sub { color: #8a7a6a; font-size: 13px; }
+  .bb-tv {
+    width: 120px;
+    flex-shrink: 0;
+    background: #e8dcc8;
+    border: 2px solid #c4b49e;
+    border-radius: 3px;
+    padding: 3px 6px;
+    font-family: 'Nunito', sans-serif;
+    position: relative;
+  }
+  .bb-tv::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: none;
+  }
+  .bb-tv .label {
+    font-size: 8px;
+    color: #5db87a;
+    letter-spacing: 1px;
+    font-family: 'Nunito', sans-serif;
+  }
+  .bb-tv .top-name {
+    font-size: 14px;
+    color: #4a3728;
+    font-weight: bold;
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bb-tv .top-kg {
+    font-size: 10px;
+    color: #f09080;
+    font-family: 'Nunito', sans-serif;
+    margin-top: 2px;
+  }
+
+  /* MODAL */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(120,100,80,0.5);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    padding: 24px;
+  }
+  .modal.open { display: flex; animation: modal-in 0.2s; }
+  @keyframes modal-in { from { opacity: 0; } }
+
+  .scene {
+    width: min(1000px, 96vw);
+    max-height: 92vh;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .scene-close {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: #f09080;
+    color: #fff;
+    border: none;
+    width: 32px; height: 32px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    cursor: pointer;
+    z-index: 30;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .scene-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .scene-tag {
+    font-family: 'Nunito', sans-serif;
+    color: #7a6a5a;
+    font-size: 16px;
+    letter-spacing: 1px;
+    font-style: italic;
+  }
+  .btn {
+    background: #fff8ef;
+    color: #5db87a;
+    border: 2px solid #c4b49e;
+    font-family: 'Nunito', sans-serif;
+    font-size: 10px;
+    padding: 10px 18px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.2s;
+  }
+  .btn:hover { background: #5db87a; border-color: #5db87a; color: #fff; transform: translateY(-1px); }
+  .btn.primary { background: #e87461; color: #fff; border-color: #d4634f; }
+  .btn.primary:hover { background: #f08575; transform: translateY(-1px); }
+
+  /* GAS */
+  .gas-bill {
+    background: #fff8ef;
+    border: 3px solid #d4c4a8;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    position: relative;
+    padding: 40px 32px 30px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .gas-bill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: none;
+    pointer-events: none;
+  }
+  .gas-tiny {
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    color: #7a6a5a;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+  }
+  .gas-big {
+    font-family: 'Nunito', sans-serif;
+    font-size: 88px;
+    color: #f09080;
+    text-shadow: none;
+    line-height: 1;
+    letter-spacing: 4px;
+    animation: flash 0.9s infinite;
+  }
+  @keyframes flash { 50% { opacity: 0.35; } }
+  .gas-sub {
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    color: #f5c542;
+    margin-top: 20px;
+    letter-spacing: 2px;
+  }
+  .gas-sub b { color: #4a3728; }
+  .gas-caption {
+    margin-top: 18px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 22px;
+    color: #4a3728;
+    letter-spacing: 1px;
+  }
+  .gas-loud {
+    margin-top: 14px;
+    background: #fff8ef;
+    border: 2px solid #d4dc42;
+    padding: 10px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 18px;
+    color: #f5c542;
+  }
+  .gas-loud .speaker {
+    font-size: 24px;
+    animation: shake 0.3s infinite;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+  }
+  .gas-crowd {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    padding: 20px 0 0;
+    position: relative;
+  }
+  .gas-watcher {
+    position: relative;
+  }
+  .gas-watcher .emoji { font-size: 38px; animation: watch 0.8s infinite alternate; }
+  .gas-watcher:nth-child(2) .emoji { animation-delay: 0.2s; }
+  .gas-watcher:nth-child(3) .emoji { animation-delay: 0.4s; }
+  .gas-watcher .bubble {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    color: #4a3728;
+    padding: 6px 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    animation: bubble-pop 4s 0.4s forwards;
+  }
+  .gas-watcher:nth-child(2) .bubble { animation-delay: 1.2s; }
+  .gas-watcher:nth-child(3) .bubble { animation-delay: 2.0s; }
+  .gas-watcher .bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 50%;
+    width: 6px; height: 6px;
+    background: #fff;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  @keyframes bubble-pop {
+    0% { opacity: 0; transform: translateX(-50%) translateY(4px); }
+    10%, 75% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  }
+
+  /* MARKET */
+  .market-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 20px;
+  }
+  .market-screen {
+    background: #fff8ef;
+    border: 3px solid #d4c4a8;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    padding: 28px 24px;
+    position: relative;
+  }
+  .market-screen::before {
+    content: 'PUBLIC DISPLAY · LANE 2';
+    position: absolute;
+    top: -12px; left: 12px;
+    background: #e8dcc8;
+    color: #7a6a5a;
+    font-family: 'Nunito', sans-serif;
+    font-size: 8px;
+    padding: 0 6px;
+    letter-spacing: 1px;
+  }
+  .market-screen .total-label {
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    color: #f5c542;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .market-screen .total-num {
+    font-family: 'Nunito', sans-serif;
+    font-size: 68px;
+    color: #f09080;
+    text-shadow: none;
+    line-height: 1.1;
+    margin: 8px 0;
+    letter-spacing: 2px;
+    animation: flash 1s infinite;
+  }
+  .market-screen .total-num .unit { font-size: 28px; display: block; }
+  .market-screen .vs {
+    font-family: 'Nunito', sans-serif;
+    font-size: 19px;
+    color: #4a3728;
+    margin-top: 14px;
+  }
+  .market-screen .vs b { color: #5db87a; }
+  .market-screen .worse {
+    margin-top: 16px;
+    background: #f4837a;
+    color: #fff;
+    padding: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .cashier-bubble {
+    margin-top: 12px;
+    background: #7ec8a0;
+    border: 1px dashed #d4dc42;
+    padding: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 17px;
+    color: #fff;
+    font-style: italic;
+  }
+  .cashier-bubble::before { content: '🧑‍💼 '; }
+
+  .receipt {
+    background: #f0ead6;
+    color: #d4c4a8;
+    padding: 18px 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .receipt::before, .receipt::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 10px;
+    background:
+      linear-gradient(-45deg, transparent 33.33%, #f0ead6 33.33%, #f0ead6 66.66%, transparent 66.66%),
+      linear-gradient(45deg, transparent 33.33%, #f0ead6 33.33%, #f0ead6 66.66%, transparent 66.66%);
+    background-size: 14px 14px;
+  }
+  .receipt::before { top: -10px; }
+  .receipt::after { bottom: -10px; transform: rotate(180deg); }
+  .receipt h3 {
+    text-align: center;
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+  .receipt .r-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dotted #999;
+    padding: 2px 0;
+  }
+  .receipt .r-row.hi {
+    background: #f4837a;
+    color: #fff;
+    margin: 1px -4px;
+    padding: 2px 4px;
+    font-weight: bold;
+  }
+  .receipt .r-total {
+    display: flex;
+    justify-content: space-between;
+    border-top: 2px solid #d4c4a8;
+    padding-top: 6px;
+    margin-top: 6px;
+    font-weight: bold;
+  }
+  .receipt .stamp {
+    margin-top: 14px;
+    text-align: center;
+    border: 2px solid #f4837a;
+    color: #e87461;
+    padding: 6px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    transform: rotate(-3deg);
+  }
+
+  /* PARKING */
+  .parking-scene {
+    background: #e8f4ed;
+    border: 3px solid #b8d8c8;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    height: 460px;
+    position: relative;
+    overflow: hidden;
+  }
+  .parking-sky {
+    position: absolute;
+    inset: 0 0 40% 0;
+    background: linear-gradient(180deg, #a8d8ea 0%, #d4eef7 100%);
+  }
+  .parking-ground {
+    position: absolute;
+    inset: 60% 0 0 0;
+    background: #d4c4a8;
+    border-top: 3px dashed #d4dc42;
+  }
+  .park-sign {
+    position: absolute;
+    top: 20px; left: 50%;
+    transform: translateX(-50%);
+    background: #f4837a;
+    color: #fff;
+    padding: 12px 24px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 17px;
+    letter-spacing: 2px;
+    animation: flash 0.6s infinite;
+    border: 3px solid #c4b49e;
+    box-shadow: 0 0 30px rgba(232,76,61,0.6);
+    white-space: nowrap;
+    z-index: 6;
+  }
+  .park-timer {
+    position: absolute;
+    top: 80px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Nunito', sans-serif;
+    font-size: 130px;
+    color: #f09080;
+    text-shadow: none;
+    line-height: 1;
+    letter-spacing: 4px;
+    z-index: 6;
+  }
+  .park-timer.done { color: #5db87a; text-shadow: none; }
+  .park-gatepost {
+    position: absolute;
+    bottom: 40%;
+    left: calc(50% - 6px);
+    width: 10px; height: 60px;
+    background: #c4b49e;
+    border: 1px solid #c4b49e;
+    z-index: 4;
+  }
+  .park-arm {
+    position: absolute;
+    bottom: 40%;
+    left: 50%;
+    width: 220px; height: 8px;
+    background: repeating-linear-gradient(90deg, #f4837a 0 18px, #fff 18px 36px);
+    transform-origin: left center;
+    transform: rotate(0deg);
+    transition: transform 0.5s;
+    border: 1px solid #c4b49e;
+    z-index: 5;
+  }
+  .park-arm.open { transform: rotate(-85deg); }
+  .park-car {
+    position: absolute;
+    bottom: 18%;
+    left: 8%;
+    width: 110px; height: 60px;
+    transition: left 1.2s cubic-bezier(0.3, 0, 0.7, 1);
+    z-index: 4;
+  }
+  .park-car svg { width: 100%; height: 100%; }
+  .park-behind {
+    position: absolute;
+    bottom: 20%;
+    right: -180px;
+    width: 90px; height: 40px;
+    transition: right 1s;
+    z-index: 3;
+  }
+  .park-behind.visible { right: 14%; }
+  .park-behind svg { width: 100%; height: 100%; }
+  .park-behind .driver-yell {
+    position: absolute;
+    top: -36px; right: -6px;
+    background: #fff;
+    color: #4a3728;
+    padding: 5px 8px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .park-behind.visible .driver-yell { opacity: 1; transform: translateY(0); transition-delay: 0.6s; }
+  .park-behind .driver-yell::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 30%;
+    width: 6px; height: 6px;
+    background: #fff;
+    transform: rotate(45deg);
+  }
+  .park-honk {
+    position: absolute;
+    bottom: 66%;
+    right: 8%;
+    font-family: 'Nunito', sans-serif;
+    font-size: 26px;
+    color: #f5c542;
+    letter-spacing: 2px;
+    z-index: 7;
+    max-width: 30%;
+    text-align: right;
+  }
+  .park-honk .h {
+    display: inline-block;
+    margin: 0 4px;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: honk-in 0.4s forwards;
+  }
+  @keyframes honk-in {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* TRASH */
+  .trash-scene {
+    background: #fff8ef;
+    border: 3px solid #d4c4a8;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    padding: 28px;
+    text-align: center;
+    position: relative;
+  }
+  .trash-label {
+    font-family: 'Nunito', sans-serif;
+    font-size: 20px;
+    color: #f5c542;
+    letter-spacing: 2px;
+    font-weight: bold;
+  }
+  .trash-handle {
+    font-family: 'Nunito', sans-serif;
+    font-size: 48px;
+    color: #f09080;
+    text-shadow: none;
+    letter-spacing: 2px;
+    margin: 12px 0;
+    animation: flash 0.5s infinite;
+    word-break: break-all;
+    line-height: 1.1;
+  }
+  .trash-broadcast {
+    margin-top: 16px;
+    background: #fff8ef;
+    border: 2px solid #d4dc42;
+    padding: 10px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 18px;
+    color: #f5c542;
+  }
+  .trash-beeps {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 18px 0 6px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 52px;
+    color: #f09080;
+  }
+  .trash-beeps .b {
+    opacity: 0.2;
+    transition: opacity 0.1s;
+    min-width: 40px;
+    display: inline-block;
+  }
+  .trash-beeps .b.on { opacity: 1; }
+  .trash-translation {
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    color: #7a6a5a;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+  .trash-translation b { color: #4a3728; }
+  .trash-ring {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+    position: relative;
+  }
+  .trash-neighbor { border-radius: 10px;
+    background: #7ec8a0;
+    border: 1px solid #d4c4a8;
+    padding: 10px 6px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    color: #8a7a6a;
+    text-align: center;
+    position: relative;
+  }
+  .trash-neighbor.hear {
+    border-color: #e87461;
+    color: #fff;
+    animation: flash 0.8s infinite;
+  }
+  .trash-neighbor .n-emoji { font-size: 22px; display: block; margin-bottom: 4px; }
+  .trash-neighbor .neighbor-say {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    color: #4a3728;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    animation: bubble-pop 4s forwards;
+    margin-bottom: 6px;
+    z-index: 10;
+  }
+  .trash-neighbor:nth-child(2) .neighbor-say { animation-delay: 0.8s; }
+  .trash-neighbor:nth-child(3) .neighbor-say { animation-delay: 1.6s; }
+
+  /* Intro */
+  #intro {
+    position: fixed; inset: 0;
+    background: linear-gradient(180deg, #c8e6c9 0%, #f0e6d3 50%, #fff8ef 100%);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 32px;
+    padding: 40px;
+    text-align: center;
+  }
+  #intro h1 {
+    font-family: 'Nunito', sans-serif;
+    font-size: 42px;
+    color: #5db87a;
+    text-shadow: 0 2px 8px rgba(93,184,122,0.3);
+    letter-spacing: 5px;
+    line-height: 1.4;
+    margin: 0;
+  }
+  @media (max-width: 900px) {
+    #intro h1 { font-size: 30px; letter-spacing: 3px; }
+    #intro .tag { font-size: 22px !important; }
+  }
+  #intro h1 .shame {
+    color: #e87461;
+    text-shadow: 0 2px 8px rgba(232,116,97,0.3);
+  }
+  #intro .tag {
+    font-family: 'Nunito', sans-serif;
+    font-size: 24px;
+    color: #4a3728;
+    max-width: 680px;
+    line-height: 1.35;
+  }
+  #intro .tag b { color: #f5c542; }
+  #intro .sub {
+    font-family: 'Nunito', sans-serif;
+    font-size: 17px;
+    color: #7a6a5a;
+  }
+  #intro .sound-note {
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    color: #5db87a;
+    background: #e8f5e9;
+    padding: 8px 18px;
+    border: 2px solid #c8e6c9;
+    border-radius: 20px;
+  }
+  #intro.hide {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+  }
+
+  /* Shame float */
+  .shame-float {
+    position: absolute;
+    color: #f09080;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    pointer-events: none;
+    animation: float-up 1.5s ease-out forwards;
+    z-index: 100;
+    text-shadow: none;
+  }
+  @keyframes float-up {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-50px); opacity: 0; }
+  }
+
+  /* Clickable NPC hint */
+  .npc { cursor: pointer; }
+  .npc:hover { filter: brightness(1.25); }
+  .npc::after {
+    content: '✨';
+    position: absolute; top: -16px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .npc:hover::after { opacity: 1; }
+
+  /* VN dialog */
+  #vn {
+    position: fixed; inset: 0;
+    display: none;
+    z-index: 800;
+    background: rgba(100,140,120,0.4);
+    backdrop-filter: blur(4px);
+    padding: 32px;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    cursor: pointer;
+  }
+  #vn.open { display: flex; }
+  #vn .portrait {
+    width: 220px; height: 220px;
+    background: #e8dcc8;
+    border: 4px solid #d4c4a8;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    margin-bottom: -20px;
+    margin-right: auto; margin-left: 4%;
+    image-rendering: pixelated;
+    display: flex; align-items: center; justify-content: center;
+    animation: portrait-in 0.25s ease-out;
+  }
+  @keyframes portrait-in { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  #vn .namebox {
+    align-self: flex-start;
+    margin-left: 4%;
+    background: #5db87a;
+    color: #fff;
+    padding: 6px 18px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    border: 3px solid #4aa86a;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    position: relative;
+    z-index: 2;
+  }
+  #vn .box {
+    width: 92%; max-width: 1100px;
+    background: #fff8ef;
+    border: 3px solid #d4c4a8;
+    border-radius: 0 16px 16px 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    padding: 26px 32px 36px;
+    min-height: 140px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 26px;
+    line-height: 1.5;
+    color: #4a3728;
+    position: relative;
+  }
+  #vn .next {
+    position: absolute; bottom: 10px; right: 22px;
+    color: #f5c542;
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    animation: blink-next 0.8s infinite;
+  }
+  @keyframes blink-next { 50% { opacity: 0.2; } }
+  #vn .hint {
+    position: absolute; top: 8px; right: 22px;
+    color: #b0a090;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+  }
+  @media (max-width: 900px) {
+    #vn .portrait { width: 160px; height: 160px; margin-left: 2%; }
+    #vn .box { font-size: 20px; padding: 20px 22px 30px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- VN DIALOG OVERLAY -->
+<div id="vn" onclick="vnAdvance()">
+  <div class="portrait" id="vn-portrait"></div>
+  <div class="namebox" id="vn-name">MAYA</div>
+  <div class="box">
+    <span class="hint">▶ click to continue</span>
+    <span id="vn-text"></span>
+    <span class="next" id="vn-next">▼</span>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div id="intro">
+  <h1>CARBON <span class="shame">SHAME</span> SYSTEM</h1>
+  <div class="tag">
+    We won't <b>stop</b> you from emitting.<br>
+    We'll just make sure <b>everyone sees you do it.</b>
+  </div>
+  <div class="sub">Click a building. See what everyone else sees.</div>
+  <div class="sound-note">🔊 Sound on for click effects & character voices</div>
+  <button class="btn primary" onclick="startGame()">&gt; ENTER NEIGHBORHOOD</button>
+</div>
+
+<div id="stage">
+  <div id="topbar">
+    <div class="logo">CSS.GOV</div>
+    <span class="plate-tag" id="citizen-handle">@ALPHAKING_420</span>
+    <span style="color:#8a9a8e;">plate <span id="plate" style="color:#d4dc42;">JX-7742</span></span>
+    <span class="ts" id="clock">APR 20 · 09:14</span>
+    <button class="sound-btn" id="sound-btn" onclick="toggleSound()">🔊 SFX</button>
+  </div>
+
+  <div id="world">
+    <div class="grass"></div>
+    <div id="billboard">
+      <div class="bb-label">BLOCK 4C<br>LIVE BOARD</div>
+      <div class="bb-tv" id="bb-tv">
+        <div class="label">▶ #1 TODAY</div>
+        <div class="top-name" id="bb-top-name">—</div>
+        <div class="top-kg" id="bb-top-kg">— kg CO₂e</div>
+      </div>
+      <div class="bb-marquee">
+        <div class="bb-track" id="bb-track"></div>
+      </div>
+    </div>
+    <!-- Roads: horizontal main road -->
+    <div class="road h" style="top: 48%;"><div class="road-line" style="top:50%; left:0; right:0;"></div></div>
+
+    <!-- TOP ROW: GAS · DEALER · MART · BANK -->
+    <div class="location" data-scene="gas" style="left: 1%; top: 18%;">
+      <div class="sign">⛽ GAS</div>
+      <svg width="165" height="150" viewBox="0 0 140 110" shape-rendering="crispEdges">
+        <rect x="10" y="14" width="120" height="12" fill="#f09080"/>
+        <rect x="10" y="26" width="120" height="4" fill="#e07060"/>
+        <rect x="18" y="30" width="8" height="50" fill="#c4b49e"/>
+        <rect x="114" y="30" width="8" height="50" fill="#c4b49e"/>
+        <rect x="34" y="40" width="72" height="50" fill="#fff8ef"/>
+        <rect x="34" y="40" width="72" height="8" fill="#8fd87a"/>
+        <rect x="42" y="54" width="18" height="22" fill="#a8d8c0"/>
+        <rect x="80" y="54" width="18" height="22" fill="#a8d8c0"/>
+        <rect x="60" y="88" width="20" height="4" fill="#c4b49e"/>
+        <rect x="66" y="70" width="8" height="18" fill="#f09080"/>
+        <rect x="0" y="90" width="140" height="20" fill="#d4c4a8"/>
+      </svg>
+      <div class="hint">&gt; fill up</div>
+    </div>
+
+    <div class="location" data-scene="dealer" style="left: 26%; top: 18%;">
+      <div class="sign">🚗 DEALER</div>
+      <svg width="170" height="150" viewBox="0 0 150 110" shape-rendering="crispEdges">
+        <rect x="5" y="16" width="140" height="74" fill="#f5d4a0"/>
+        <rect x="5" y="16" width="140" height="12" fill="#e8c070"/>
+        <text x="75" y="25" text-anchor="middle" fill="#fff" font-family="Nunito" font-size="6">MEGA MOTORS</text>
+        <rect x="12" y="34" width="56" height="40" fill="#c8e6d4"/>
+        <rect x="82" y="34" width="56" height="40" fill="#c8e6d4"/>
+        <rect x="20" y="42" width="18" height="10" fill="#f4837a" rx="2"/>
+        <rect x="22" y="56" width="14" height="8" fill="#a09080"/>
+        <rect x="90" y="42" width="22" height="12" fill="#f5e680" rx="2"/>
+        <rect x="92" y="58" width="18" height="8" fill="#a09080"/>
+        <rect x="60" y="78" width="30" height="18" fill="#c4b49e"/>
+        <rect x="0" y="90" width="150" height="20" fill="#d4c4a8"/>
+      </svg>
+      <div class="hint">&gt; buy a car</div>
+    </div>
+
+    <div class="location" data-scene="market" style="left: 51%; top: 18%;">
+      <div class="sign">🛒 MART</div>
+      <svg width="170" height="150" viewBox="0 0 150 110" shape-rendering="crispEdges">
+        <rect x="10" y="20" width="130" height="70" fill="#f5e680"/>
+        <polygon points="5,20 75,4 145,20" fill="#8fd87a"/>
+        <rect x="20" y="28" width="110" height="12" fill="#fff"/>
+        <text x="75" y="37" text-anchor="middle" fill="#f4837a" font-family="Nunito" font-size="7">MART</text>
+        <rect x="20" y="48" width="34" height="26" fill="#c8e6d4"/>
+        <rect x="96" y="48" width="34" height="26" fill="#c8e6d4"/>
+        <rect x="64" y="54" width="22" height="36" fill="#c4b49e"/>
+        <rect x="0" y="90" width="150" height="20" fill="#d4c4a8"/>
+      </svg>
+      <div class="hint">&gt; shop</div>
+    </div>
+
+    <div class="location" data-scene="bank" style="left: 76%; top: 18%;">
+      <div class="sign">🏦 BANK</div>
+      <svg width="165" height="150" viewBox="0 0 140 110" shape-rendering="crispEdges">
+        <polygon points="70,4 5,30 135,30" fill="#f5e680"/>
+        <rect x="10" y="30" width="120" height="60" fill="#f0ead6"/>
+        <rect x="10" y="30" width="120" height="8" fill="#e8c070"/>
+        <text x="70" y="20" text-anchor="middle" fill="#4a3728" font-family="Nunito" font-size="6">BANK</text>
+        <rect x="22" y="42" width="10" height="36" fill="#f5e680"/>
+        <rect x="40" y="42" width="10" height="36" fill="#f5e680"/>
+        <rect x="58" y="42" width="10" height="36" fill="#f5e680"/>
+        <rect x="76" y="42" width="10" height="36" fill="#f5e680"/>
+        <rect x="94" y="42" width="10" height="36" fill="#f5e680"/>
+        <rect x="112" y="42" width="10" height="36" fill="#f5e680"/>
+        <rect x="54" y="60" width="32" height="30" fill="#c4b49e"/>
+        <rect x="0" y="90" width="140" height="20" fill="#d4c4a8"/>
+      </svg>
+      <div class="hint">&gt; apply for loan</div>
+    </div>
+
+    <!-- BOTTOM ROW: PARK · WASTE · ESTATE -->
+    <div class="location" data-scene="parking" style="left: 1%; bottom: 4%;">
+      <div class="sign">🅿 PARK</div>
+      <svg width="185" height="150" viewBox="0 0 150 110" shape-rendering="crispEdges">
+        <rect x="0" y="40" width="150" height="70" fill="#c4b49e"/>
+        <g stroke="#d4dc42" stroke-width="1" fill="none">
+          <line x1="20" y1="50" x2="20" y2="100"/>
+          <line x1="50" y1="50" x2="50" y2="100"/>
+          <line x1="80" y1="50" x2="80" y2="100"/>
+          <line x1="110" y1="50" x2="110" y2="100"/>
+        </g>
+        <rect x="60" y="6" width="30" height="30" fill="#3498db"/>
+        <text x="75" y="30" text-anchor="middle" fill="#fff" font-family="Nunito" font-size="18">P</text>
+        <rect x="24" y="62" width="22" height="12" fill="#f4837a" stroke="#c4a080"/>
+        <rect x="54" y="62" width="22" height="12" fill="#a8d8c0" stroke="#c4a080"/>
+        <rect x="84" y="62" width="22" height="12" fill="#8fd87a" stroke="#c4a080"/>
+      </svg>
+      <div class="hint">&gt; park</div>
+    </div>
+
+    <div class="location" data-scene="trash" style="left: 30%; bottom: 4%;">
+      <div class="sign">♻ WASTE</div>
+      <svg width="170" height="150" viewBox="0 0 140 110" shape-rendering="crispEdges">
+        <rect x="14" y="24" width="112" height="66" fill="#a8d8c0"/>
+        <polygon points="10,24 70,6 130,24" fill="#c4b49e"/>
+        <rect x="40" y="34" width="60" height="14" fill="#4a3728"/>
+        <text x="70" y="44" text-anchor="middle" fill="#8fd87a" font-family="Nunito" font-size="7">WASTE</text>
+        <rect x="56" y="56" width="28" height="34" fill="#9a8a7a"/>
+        <rect x="18" y="70" width="14" height="20" fill="#3498db" stroke="#c4a080"/>
+        <rect x="34" y="70" width="14" height="20" fill="#8fd87a" stroke="#c4a080"/>
+        <rect x="98" y="70" width="14" height="20" fill="#9a8a7a" stroke="#c4a080"/>
+        <rect x="0" y="90" width="140" height="20" fill="#d4c4a8"/>
+      </svg>
+      <div class="hint">&gt; dump</div>
+    </div>
+
+    <div class="location" data-scene="estate" style="left: 60%; bottom: 4%;">
+      <div class="sign">🏠 ESTATE</div>
+      <svg width="185" height="150" viewBox="0 0 150 110" shape-rendering="crispEdges">
+        <rect x="10" y="36" width="130" height="54" fill="#f5dcc8"/>
+        <polygon points="75,4 5,40 145,40" fill="#e07060"/>
+        <rect x="10" y="36" width="130" height="6" fill="#e8c4a0"/>
+        <text x="75" y="28" text-anchor="middle" fill="#fff" font-family="Nunito" font-size="5">DREAM HOMES</text>
+        <rect x="22" y="50" width="24" height="20" fill="#87CEEB" stroke="#c4a080"/>
+        <rect x="104" y="50" width="24" height="20" fill="#87CEEB" stroke="#c4a080"/>
+        <rect x="60" y="56" width="30" height="34" fill="#c4a080"/>
+        <rect x="68" y="60" width="14" height="10" fill="#87CEEB"/>
+        <rect x="0" y="90" width="150" height="20" fill="#d4c4a8"/>
+      </svg>
+      <div class="hint">&gt; buy a home</div>
+    </div>
+
+    <!-- Ambient props -->
+    <div class="prop tree" style="left: 24%; top: 10%;">
+      <svg width="40" height="55" viewBox="0 0 60 80" shape-rendering="crispEdges">
+        <rect x="26" y="50" width="8" height="28" fill="#c4a080"/>
+        <circle cx="30" cy="34" r="22" fill="#7bc48d"/>
+        <circle cx="20" cy="40" r="14" fill="#68b87a"/>
+        <circle cx="40" cy="40" r="14" fill="#68b87a"/>
+        <circle cx="30" cy="28" r="10" fill="#90d8a0"/>
+      </svg>
+    </div>
+    <div class="prop tree" style="left: 49%; top: 10%;">
+      <svg width="36" height="50" viewBox="0 0 60 80" shape-rendering="crispEdges">
+        <rect x="26" y="50" width="8" height="28" fill="#c4a080"/>
+        <circle cx="30" cy="34" r="22" fill="#7bc48d"/>
+        <circle cx="20" cy="40" r="14" fill="#68b87a"/>
+        <circle cx="40" cy="40" r="14" fill="#68b87a"/>
+      </svg>
+    </div>
+    <div class="prop tree" style="left: 74%; top: 10%;">
+      <svg width="38" height="52" viewBox="0 0 60 80" shape-rendering="crispEdges">
+        <rect x="26" y="50" width="8" height="28" fill="#c4a080"/>
+        <circle cx="30" cy="34" r="22" fill="#7bc48d"/>
+        <circle cx="20" cy="40" r="14" fill="#68b87a"/>
+        <circle cx="40" cy="40" r="14" fill="#90d8a0"/>
+      </svg>
+    </div>
+    <div class="prop tree" style="left: 28%; bottom: 4%;">
+      <svg width="34" height="48" viewBox="0 0 60 80" shape-rendering="crispEdges">
+        <rect x="26" y="50" width="8" height="28" fill="#c4a080"/>
+        <circle cx="30" cy="34" r="22" fill="#7bc48d"/>
+        <circle cx="18" cy="42" r="12" fill="#68b87a"/>
+        <circle cx="42" cy="42" r="12" fill="#68b87a"/>
+      </svg>
+    </div>
+    <div class="prop tree" style="left: 58%; bottom: 4%;">
+      <svg width="36" height="50" viewBox="0 0 60 80" shape-rendering="crispEdges">
+        <rect x="26" y="50" width="8" height="28" fill="#c4a080"/>
+        <circle cx="30" cy="34" r="22" fill="#7bc48d"/>
+        <circle cx="20" cy="40" r="14" fill="#68b87a"/>
+        <circle cx="40" cy="40" r="14" fill="#68b87a"/>
+      </svg>
+    </div>
+    <!-- streetlamps along road -->
+    <div class="prop" style="left: 12%; top: 44%;">
+      <svg width="14" height="42" viewBox="0 0 14 42" shape-rendering="crispEdges">
+        <rect x="6" y="6" width="2" height="34" fill="#c4b49e"/>
+        <rect x="3" y="4" width="8" height="4" fill="#f5e680"/>
+        <circle cx="7" cy="3" r="3" fill="#fff4a0" opacity="0.85"/>
+      </svg>
+    </div>
+    <div class="prop" style="left: 38%; top: 44%;">
+      <svg width="14" height="42" viewBox="0 0 14 42" shape-rendering="crispEdges">
+        <rect x="6" y="6" width="2" height="34" fill="#c4b49e"/>
+        <rect x="3" y="4" width="8" height="4" fill="#f5e680"/>
+        <circle cx="7" cy="3" r="3" fill="#fff4a0" opacity="0.85"/>
+      </svg>
+    </div>
+    <div class="prop" style="left: 64%; top: 44%;">
+      <svg width="14" height="42" viewBox="0 0 14 42" shape-rendering="crispEdges">
+        <rect x="6" y="6" width="2" height="34" fill="#c4b49e"/>
+        <rect x="3" y="4" width="8" height="4" fill="#f5e680"/>
+        <circle cx="7" cy="3" r="3" fill="#fff4a0" opacity="0.85"/>
+      </svg>
+    </div>
+    <div class="prop" style="left: 88%; top: 44%;">
+      <svg width="14" height="42" viewBox="0 0 14 42" shape-rendering="crispEdges">
+        <rect x="6" y="6" width="2" height="34" fill="#c4b49e"/>
+        <rect x="3" y="4" width="8" height="4" fill="#f5e680"/>
+        <circle cx="7" cy="3" r="3" fill="#fff4a0" opacity="0.85"/>
+      </svg>
+    </div>
+    <!-- bench + fire hydrant -->
+    <div class="prop" style="right: 8%; top: 52%;">
+      <svg width="34" height="18" viewBox="0 0 34 18" shape-rendering="crispEdges">
+        <rect x="0" y="2" width="34" height="4" fill="#6b4a2a"/>
+        <rect x="0" y="6" width="34" height="2" fill="#4d3a1e"/>
+        <rect x="2" y="8" width="3" height="8" fill="#c4b49e"/>
+        <rect x="29" y="8" width="3" height="8" fill="#c4b49e"/>
+      </svg>
+    </div>
+    <div class="prop" style="left: 93%; bottom: 42%;">
+      <svg width="16" height="22" viewBox="0 0 16 22" shape-rendering="crispEdges">
+        <rect x="5" y="18" width="6" height="4" fill="#c4b49e"/>
+        <rect x="3" y="6" width="10" height="14" fill="#e07060"/>
+        <rect x="5" y="2" width="6" height="4" fill="#f09080"/>
+        <rect x="1" y="11" width="14" height="2" fill="#8a2a22"/>
+      </svg>
+    </div>
+
+    <div class="npc" data-home-x="22" data-home-y="46" style="left:22%; top:46%;"></div>
+    <div class="npc" data-home-x="46" data-home-y="50" style="left:46%; top:50%;"></div>
+    <div class="npc" data-home-x="70" data-home-y="46" style="left:70%; top:46%;"></div>
+    <div class="npc" data-home-x="90" data-home-y="50" style="left:90%; top:50%;"></div>
+
+    <div id="walker" style="left:50%; top:50%;">
+      <div class="sprite">
+        <div class="px" style="left:6px; top:0; width:8px; height:2px; background:#c4b49e;"></div>
+        <div class="px" style="left:4px; top:2px; width:12px; height:2px; background:#c4b49e;"></div>
+        <div class="px" style="left:5px; top:4px; width:10px; height:6px; background:#e8c496;"></div>
+        <div class="px" style="left:7px; top:6px; width:2px; height:2px; background:#000;"></div>
+        <div class="px" style="left:11px; top:6px; width:2px; height:2px; background:#000;"></div>
+        <div class="px" style="left:4px; top:10px; width:12px; height:10px; background:#8fd87a;"></div>
+        <div class="px" style="left:3px; top:12px; width:2px; height:6px; background:#8fd87a;"></div>
+        <div class="px" style="left:15px; top:12px; width:2px; height:6px; background:#8fd87a;"></div>
+        <div class="px" style="left:5px; top:20px; width:4px; height:8px; background:#7bc48d;"></div>
+        <div class="px" style="left:11px; top:20px; width:4px; height:8px; background:#7bc48d;"></div>
+      </div>
+      <div class="shadow"></div>
+    </div>
+  </div>
+
+  <div id="sidebar">
+    <div>
+      <div class="panel-title">Social Carbon Rating</div>
+      <div class="rating-card">
+        <div class="rating-grade" id="grade" style="color:#8fd87a;">A+</div>
+        <div class="rating-label" id="grade-label">MODEL CITIZEN</div>
+        <div class="rating-bar"><div class="rating-bar-fill" id="bar-fill" style="width:5%;"></div></div>
+        <div class="budget-row">
+          <span class="l">Daily budget</span>
+          <span class="v">6.0 kg</span>
+        </div>
+        <div class="budget-row">
+          <span class="l">Used today</span>
+          <span class="v ok" id="budget-used">0.0 kg</span>
+        </div>
+        <div class="budget-row">
+          <span class="l">Over by</span>
+          <span class="v ok" id="budget-over">0.0 kg (0%)</span>
+        </div>
+        <div class="impact-box" id="impact-box">
+          <span class="big" id="impact-headline">Within safe zone ✓</span>
+          <div id="impact-body">Your emissions today are under the 6 kg/day personal climate budget. Keep it up.</div>
+          <div class="bears" id="impact-bears"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="panel-title">Today</div>
+      <div class="stat"><span class="l">CO₂e</span><span class="v" id="stat-co2">0.0 kg</span></div>
+      <div class="stat"><span class="l">Shame</span><span class="v" id="stat-shame">0</span></div>
+      <div class="stat"><span class="l">Witnesses</span><span class="v" id="stat-wit">0</span></div>
+    </div>
+    <div>
+      <div class="panel-title">Block Leaderboard</div>
+      <div class="rank-board" id="rank-board"></div>
+    </div>
+    <div class="chat-wrap">
+      <div class="panel-title">Neighborhood Chat</div>
+      <div class="feed" id="feed"></div>
+    </div>
+    <div class="foot" style="flex-shrink:0;">"Privacy is a pre-climate luxury."<br>— CSS Charter §2</div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal" id="modal-gas">
+  <div class="scene">
+    <button class="scene-close" onclick="closeModal()">X</button>
+    <div class="gas-bill">
+      <div class="gas-tiny">PUBLIC BILLBOARD · PUMP <span id="gas-pump">04</span></div>
+      <div class="gas-big" id="gas-big">+42 kg</div>
+      <div class="gas-sub">PLATE <b id="gas-plate">JX-7742</b> · FILL #<b id="gas-count">3</b> THIS MONTH</div>
+      <div class="gas-caption" id="gas-caption">Every driver on Main St. can see this.</div>
+      <div class="gas-loud"><span class="speaker">📢</span><span id="gas-loud-text">"Plate JX-7742, pump 4, 42 kilograms."</span></div>
+      <div class="gas-crowd" id="gas-crowd"></div>
+    </div>
+    <div class="scene-actions">
+      <span class="scene-tag">// The pump works. It just announces itself.</span>
+      <div>
+        <button class="btn" onclick="closeModal()">&gt; SLINK AWAY</button>
+        <button class="btn primary" onclick="resolveScene('gas')">&gt; PAY & ACCEPT</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-market">
+  <div class="scene">
+    <button class="scene-close" onclick="closeModal()">X</button>
+    <div class="market-wrap">
+      <div class="market-screen">
+        <div class="total-label">CARBON TOTAL</div>
+        <div class="total-num"><span id="mkt-total">20.0</span><span class="unit">kg CO₂e</span></div>
+        <div class="vs">Block average today: <b>4.2 kg</b></div>
+        <div class="worse" id="mkt-worse">WORSE THAN 87% OF THIS LANE</div>
+        <div class="cashier-bubble" id="cashier-line">"Uh... that's a lot of red items today."</div>
+      </div>
+      <div class="receipt">
+        <h3>NEIGHBORHOOD MART</h3>
+        <div style="text-align:center; font-size:11px; color:#666;">LANE 2 · <span id="mkt-time">09:14</span> · APR 20</div>
+        <div style="margin:10px 0; border-top:1px dashed #999;"></div>
+        <div id="mkt-items"></div>
+        <div class="r-total"><span>TOTAL CO₂e</span><span><span id="mkt-total-2">20.0</span> kg</span></div>
+        <div class="stamp">HIGH CARBON</div>
+      </div>
+    </div>
+    <div class="scene-actions">
+      <span class="scene-tag">// The screen faces the queue, not you.</span>
+      <div>
+        <button class="btn" onclick="closeModal()">&gt; ABANDON CART</button>
+        <button class="btn primary" onclick="resolveScene('market')">&gt; SWIPE CARD</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-parking">
+  <div class="scene">
+    <button class="scene-close" onclick="closeModal()">X</button>
+    <div class="parking-scene">
+      <div class="parking-sky"></div>
+      <div class="parking-ground"></div>
+      <div class="park-sign" id="park-sign">HIGH-CARBON VEHICLE</div>
+      <div class="park-timer" id="park-timer">3</div>
+      <div class="park-gatepost"></div>
+      <div class="park-arm" id="park-arm"></div>
+      <div class="park-car" id="park-car">
+        <svg viewBox="0 0 110 60">
+          <rect x="8" y="28" width="94" height="22" fill="#f5e680" stroke="#c4a080" stroke-width="2"/>
+          <rect x="22" y="14" width="66" height="16" fill="#7a8a3a" stroke="#c4a080" stroke-width="2"/>
+          <circle cx="25" cy="52" r="8" fill="#000"/>
+          <circle cx="85" cy="52" r="8" fill="#000"/>
+          <rect x="78" y="42" width="22" height="6" fill="#fff"/>
+          <text id="park-plate-text" x="89" y="47" text-anchor="middle" font-family="Nunito" font-size="4" fill="#000">JX-7742</text>
+        </svg>
+      </div>
+      <div class="park-behind" id="park-behind">
+        <div class="driver-yell" id="driver-yell">"jeez, another gas-guzzler"</div>
+        <svg viewBox="0 0 100 40">
+          <rect x="5" y="16" width="90" height="18" fill="#3498db" stroke="#c4a080" stroke-width="2"/>
+          <rect x="18" y="6" width="64" height="12" fill="#246fa0" stroke="#c4a080" stroke-width="2"/>
+          <circle cx="22" cy="36" r="6" fill="#000"/>
+          <circle cx="78" cy="36" r="6" fill="#000"/>
+        </svg>
+      </div>
+      <div class="park-honk" id="park-honk"></div>
+    </div>
+    <div class="scene-actions">
+      <span class="scene-tag">// 3 seconds. Long enough for the car behind to know why.</span>
+      <div>
+        <button class="btn" onclick="closeModal()">&gt; BACK OUT</button>
+        <button class="btn primary" onclick="resolveScene('parking')">&gt; WAIT IT OUT</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-trash">
+  <div class="scene">
+    <button class="scene-close" onclick="closeModal()">X</button>
+    <div class="trash-scene">
+      <div class="trash-label">⚠ OVER-QUOTA ALARM · BLOCK 4C</div>
+      <div class="trash-handle" id="trash-handle">@ALPHAKING_420</div>
+      <div class="trash-label" style="color:#7a6a5a; font-size:17px;">↑ YOUR HANDLE · NOW ON EVERY SCREEN IN THE BUILDING</div>
+      <div class="trash-broadcast"><span>📢</span><span id="trash-broadcast-text">"@ALPHAKING_420 over quota. Again."</span></div>
+      <div class="trash-label" style="font-size:14px; color:#b5c5b8; margin-top: 14px;">Neighbors who just got the push notification:</div>
+      <div class="trash-ring" id="trash-ring">
+        <div class="trash-neighbor hear">
+          <div class="neighbor-say" id="n-say-1">"not again..."</div>
+          <span class="n-emoji">📱</span>@maya_g
+        </div>
+        <div class="trash-neighbor hear">
+          <div class="neighbor-say" id="n-say-2">"third time this week"</div>
+          <span class="n-emoji">📱</span>@dan3c
+        </div>
+        <div class="trash-neighbor hear">
+          <div class="neighbor-say" id="n-say-3">"🙄"</div>
+          <span class="n-emoji">📱</span>@kimbo
+        </div>
+        <div class="trash-neighbor hear"><span class="n-emoji">📱</span>@rikudoj</div>
+        <div class="trash-neighbor"><span class="n-emoji">📡</span>#block-4c</div>
+      </div>
+    </div>
+    <div class="scene-actions">
+      <span class="scene-tag">// Every phone on the block just buzzed. With your handle.</span>
+      <div>
+        <button class="btn" onclick="closeModal()">&gt; WALK AWAY</button>
+        <button class="btn primary" onclick="resolveScene('trash')">&gt; DUMP ANYWAY</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DEALER MODAL -->
+<div class="modal" id="modal-dealer">
+  <div class="scene">
+    <button class="scene-close" onclick="closeModal()">X</button>
+    <div class="gas-bill" style="padding-bottom:20px;">
+      <div class="gas-tiny">PUBLIC SHOWROOM · MEGA MOTORS</div>
+      <div style="display:flex; gap:20px; justify-content:center; margin:18px 0; flex-wrap:wrap;">
+        <div style="background:#fff8ef; border:2px solid #c4b49e; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyVehicle('sedan',22)" id="car-sedan">
+          <div style="font-size:36px;">🚗</div>
+          <div style="font-family:'Nunito'; font-size:9px; color:#8fd87a; margin:6px 0;">SEDAN</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#b5c5b8;">+22 kg CO₂e</div>
+        </div>
+        <div style="background:#fff8ef; border:2px solid #f4837a; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyVehicle('SUV',55)" id="car-suv">
+          <div style="font-size:36px;">🚙</div>
+          <div style="font-family:'Nunito'; font-size:9px; color:#d4dc42; margin:6px 0;">SUV</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#ff6b5b;">+55 kg CO₂e</div>
+        </div>
+        <div style="background:#fff8ef; border:3px solid #f4837a; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px; animation:flash 1.2s infinite;" onclick="buyVehicle('SPORTS CAR',88)" id="car-sports">
+          <div style="font-size:36px;">🏎️</div>
+          <div style="font-family:'Nunito'; font-size:9px; color:#ff6b5b; margin:6px 0;">SPORTS</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#ff6b5b;">+88 kg CO₂e</div>
+        </div>
+      </div>
+      <div class="gas-caption" id="dealer-caption">The billboard updates the second you sign.</div>
+      <div class="gas-loud"><span class="speaker">📢</span><span id="dealer-loud">Pick a car. Everyone on the block gets notified.</span></div>
+      <div class="gas-crowd" id="dealer-crowd"></div>
+    </div>
+    <div class="scene-actions">
+      <span class="scene-tag">// You can buy anything. They just want you to know they're watching.</span>
+      <div><button class="btn" onclick="closeModal()">&gt; LEAVE LOT</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- BANK MODAL -->
+<div class="modal" id="modal-bank">
+  <div class="scene">
+    <button class="scene-close" onclick="closeModal()">X</button>
+    <div class="market-wrap">
+      <div class="market-screen">
+        <div class="total-label">CARBON CREDIT SCORE</div>
+        <div class="total-num"><span id="bank-score">820</span><span class="unit" id="bank-label">EXCELLENT</span></div>
+        <div class="vs" id="bank-eligibility">Loan eligibility: <b>APPROVED</b></div>
+        <div class="worse" id="bank-status">STANDARD RATE</div>
+        <div class="cashier-bubble" id="banker-line">"Your carbon liability is factored into every application."</div>
+      </div>
+      <div class="receipt">
+        <h3>CARBON CREDIT BANK</h3>
+        <div style="text-align:center; font-size:11px; color:#666;">LOBBY SCREEN · PUBLIC VIEW</div>
+        <div style="margin:10px 0; border-top:1px dashed #999;"></div>
+        <div class="r-row"><span>Daily budget</span><span>6.0 kg</span></div>
+        <div class="r-row" id="bank-used"><span>Used today</span><span>0 kg</span></div>
+        <div class="r-row hi" id="bank-over"><span>Over by</span><span>0 kg</span></div>
+        <div class="r-row" id="bank-risk"><span>Risk level</span><span>LOW</span></div>
+        <div class="r-total"><span>DECISION</span><span id="bank-decision">APPROVED</span></div>
+        <div class="stamp" id="bank-stamp">STANDARD RATE</div>
+      </div>
+    </div>
+    <div class="scene-actions">
+      <span class="scene-tag">// The lobby screen faces outward. Everyone in line can see.</span>
+      <div>
+        <button class="btn" onclick="closeModal()">&gt; WALK OUT</button>
+        <button class="btn primary" onclick="resolveScene('bank')">&gt; SUBMIT APPLICATION</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESTATE MODAL -->
+<div class="modal" id="modal-estate">
+  <div class="scene">
+    <button class="scene-close" onclick="closeModal()">X</button>
+    <div class="gas-bill" style="padding-bottom:20px;">
+      <div class="gas-tiny">DREAM HOMES REALTY · PUBLIC LISTING</div>
+      <div style="display:flex; gap:20px; justify-content:center; margin:18px 0; flex-wrap:wrap;">
+        <div style="background:#fff8ef; border:2px solid #c4b49e; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyHome('STUDIO',8)">
+          <div style="font-size:36px;">🏢</div>
+          <div style="font-family:'Nunito'; font-size:9px; color:#8fd87a; margin:6px 0;">STUDIO</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#b5c5b8;">+8 kg CO₂e</div>
+        </div>
+        <div style="background:#fff8ef; border:2px solid #d4dc42; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyHome('HOUSE',30)">
+          <div style="font-size:36px;">🏠</div>
+          <div style="font-family:'Nunito'; font-size:9px; color:#d4dc42; margin:6px 0;">HOUSE</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#d4dc42;">+30 kg CO₂e</div>
+        </div>
+        <div style="background:#fff8ef; border:3px solid #f4837a; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px; animation:flash 1.2s infinite;" onclick="buyHome('MANSION',120)">
+          <div style="font-size:36px;">🏰</div>
+          <div style="font-family:'Nunito'; font-size:9px; color:#ff6b5b; margin:6px 0;">MANSION</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#ff6b5b;">+120 kg CO₂e</div>
+        </div>
+      </div>
+      <div class="gas-caption" id="estate-caption">Your HOA gets a push notification with your carbon profile.</div>
+      <div class="gas-loud"><span class="speaker">📢</span><span id="estate-loud">New buyer alert. Carbon profile attached.</span></div>
+      <div class="gas-crowd" id="estate-crowd"></div>
+    </div>
+    <div class="scene-actions">
+      <span class="scene-tag">// The neighbors voted for mandatory carbon disclosure on all sales.</span>
+      <div><button class="btn" onclick="closeModal()">&gt; LEAVE OFFICE</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================ STATE ================
+const state = {
+  co2: 0, shame: 0, witnesses: 0,
+  clock: { h: 9, m: 14 },
+  plate: 'JX-7742',
+  handle: '@ALPHAKING_420',
+  soundOn: true,
+  visits: { gas: 0, market: 0, parking: 0, trash: 0, dealer: 0, bank: 0, estate: 0 },
+};
+
+// ================ HANDLE POOL ================
+const HANDLE_POOL = [
+  '@ALPHAKING_420', '@MEGACHAD_77', '@GRINDMODE_ON', '@CARBONKING99',
+  '@SIGMAWARRIOR', '@BIGBOSS_2k', '@GOAT_MENTALITY', '@HUSTLE_LORD',
+  '@BRAINROT_420', '@DIESELDAD_03', '@V8_SUPREMACY', '@GYMBRO_xx',
+];
+
+// ================ RANDOM DATA ================
+const PLATES = ['JX-7742','KM-4419','PL-2086','TR-9903','BB-1175','WX-5540','ZC-8821'];
+const GAS_AMOUNTS = [32, 38, 42, 47, 51, 58, 63];
+const PUMPS = ['01','02','03','04','05','06'];
+const GAS_CAPTIONS = [
+  'Every driver on Main St. can see this.',
+  'The receipt printer is silent. The billboard is not.',
+  'Your neighbor just passed by.',
+  'Pump 2 is pretending not to look.',
+  'Someone is definitely taking a photo.',
+];
+const GAS_BUBBLES = [
+  ['again??','woof','that\'s a lot'],
+  ['oof','seriously dude','...'],
+  ['rough','that\'s embarrassing','🙄'],
+  ['ma told me about him','another one','wow ok'],
+  ['every monday smh','big truck energy','tsk tsk'],
+];
+const MKT_POOLS = [
+  [
+    { n: 'Ribeye x2', c: 12.4, hi: true },
+    { n: 'Avocado (Chile)', c: 2.1, hi: true },
+    { n: 'Berries (air)', c: 3.8, hi: true },
+    { n: 'Kale', c: 0.1, hi: false },
+    { n: 'Almond milk', c: 0.4, hi: false },
+    { n: 'PET water x6', c: 0.9, hi: false },
+    { n: 'Pasta x2', c: 0.3, hi: false },
+  ],
+  [
+    { n: 'Lamb chops', c: 15.2, hi: true },
+    { n: 'Cheese wheel', c: 4.1, hi: true },
+    { n: 'Mangoes (air)', c: 2.4, hi: true },
+    { n: 'Sourdough', c: 0.3, hi: false },
+    { n: 'Spinach', c: 0.1, hi: false },
+    { n: 'Oat milk', c: 0.2, hi: false },
+  ],
+  [
+    { n: 'Wagyu x1', c: 18.8, hi: true },
+    { n: 'Shrimp (frozen)', c: 6.2, hi: true },
+    { n: 'Cherries (air)', c: 3.1, hi: true },
+    { n: 'Lemons', c: 0.2, hi: false },
+    { n: 'Rice 5kg', c: 0.4, hi: false },
+  ],
+  [
+    { n: 'Pork belly x2', c: 7.4, hi: true },
+    { n: 'Parmesan', c: 3.6, hi: true },
+    { n: 'Salmon (farmed)', c: 4.2, hi: true },
+    { n: 'Tomatoes (heated gh)', c: 2.8, hi: true },
+    { n: 'Pasta', c: 0.2, hi: false },
+  ],
+];
+const CASHIER_LINES = [
+  '"Uh... that\'s a lot of red items today."',
+  '"Sir, the screen behind me is already showing."',
+  '"No judgment, but... yeah."',
+  '"You want me to turn the screen off? I can\'t."',
+  '"Next receipt prints your percentile."',
+];
+const MKT_WORSE = ['WORSE THAN 87%','WORSE THAN 91%','WORSE THAN 76%','WORSE THAN 94%'];
+const DRIVER_YELLS = [
+  '"jeez, another gas-guzzler"',
+  '"move it, SUV"',
+  '"not this guy again"',
+  '"GO. PLEASE."',
+  '"this is why we can\'t have nice things"',
+  '"get an EV buddy"',
+];
+const TRASH_UNITS = ['4C-12','4C-08','4C-15','4C-03','4C-22'];
+const NEIGHBOR_LINES = [
+  ['"not again..."','"third time this week"','"🙄"','"dude."','"ugh, 4C-12"','"i can hear it through the floor"'],
+  ['"that family I swear"','"posting this"','"enough"','"my kid\'s sleeping"','"classic"','"block chat!"'],
+];
+
+function randPick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function randPickN(arr, n) {
+  const copy = arr.slice();
+  const out = [];
+  while (out.length < n && copy.length) {
+    out.push(copy.splice(Math.floor(Math.random()*copy.length),1)[0]);
+  }
+  return out;
+}
+
+// ================ AUDIO ================
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) {}
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+function beep(freq=440, dur=0.15, type='square', vol=0.15) {
+  if (!state.soundOn || !audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.value = vol;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  o.stop(audioCtx.currentTime + dur);
+}
+function honkSound(dist = 1) {
+  if (!state.soundOn || !audioCtx) return;
+  // Softer honk — lower volume
+  const t = audioCtx.currentTime;
+  [420, 528].forEach(f => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'square'; o.frequency.value = f;
+    const vol = 0.05 / dist;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.02);
+    g.gain.setValueAtTime(vol, t + 0.25);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t + 0.37);
+  });
+  const lo = audioCtx.createOscillator(), lg = audioCtx.createGain();
+  lo.type = 'sawtooth'; lo.frequency.value = 110;
+  lg.gain.setValueAtTime(0.025 / dist, t);
+  lg.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+  lo.connect(lg); lg.connect(audioCtx.destination);
+  lo.start(t); lo.stop(t + 0.35);
+}
+function clickSfx() {
+  if (!state.soundOn || !audioCtx) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'square'; o.frequency.value = 620;
+  g.gain.setValueAtTime(0.05, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(t); o.stop(t + 0.06);
+}
+function typeSfx() {
+  if (!state.soundOn || !audioCtx) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'square'; o.frequency.value = 1500 + Math.random()*400;
+  g.gain.setValueAtTime(0.012, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(t); o.stop(t + 0.03);
+}
+// BGM disabled — click sfx only
+function startBGM() { /* disabled */ }
+
+// "Minimini" gibberish voice — like pizza game / Animal Crossing
+let _gibBusy = false;
+function gibberish(pitch = 1.0) {
+  if (!state.soundOn || !audioCtx || _gibBusy) return;
+  _gibBusy = true;
+  // Single clean blip per call — no overlap possible
+  const freq = (360 + Math.random() * 80) * pitch;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.08, t);
+  g.gain.setValueAtTime(0.08, t + 0.055);
+  g.gain.linearRampToValueAtTime(0, t + 0.065);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(t); o.stop(t + 0.07);
+  // Cooldown — next blip allowed after this one fully ends
+  setTimeout(() => { _gibBusy = false; }, 90);
+}
+function chime() {
+  if (!state.soundOn || !audioCtx) return;
+  beep(660, 0.08, 'sine', 0.12);
+  setTimeout(() => beep(880, 0.12, 'sine', 0.12), 80);
+}
+function buzzer() {
+  if (!state.soundOn || !audioCtx) return;
+  beep(180, 0.25, 'square', 0.03);
+}
+function say(text, rate=1.0, pitch=1.0) {
+  if (!state.soundOn || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = rate; u.pitch = pitch; u.volume = 0.9;
+    window.speechSynthesis.speak(u);
+  } catch(e) {}
+}
+
+function toggleSound() {
+  state.soundOn = !state.soundOn;
+  const btn = document.getElementById('sound-btn');
+  btn.textContent = state.soundOn ? '🔊 SFX' : '🔇 OFF';
+  btn.classList.toggle('off', !state.soundOn);
+  if (state.soundOn) initAudio();
+}
+
+// ================ INTRO ================
+let gameStarted = false;
+function startGame() {
+  if (gameStarted) return;
+  gameStarted = true;
+  initAudio();
+  state.handle = randPick(HANDLE_POOL);
+  document.getElementById('citizen-handle').textContent = state.handle;
+  document.getElementById('intro').classList.add('hide');
+  setTimeout(() => document.getElementById('intro').style.display = 'none', 500);
+  feedMsg('sys', 'CSS.GOV', `${state.handle} checked in. Block 4C is watching.`);
+  setTimeout(() => feedMsg('user', '🟢 @maya_g', "hey. you the new 4C-12?"), 5000);
+  renderRank();
+}
+// Enter key or click anywhere on intro to start
+document.getElementById('intro').addEventListener('click', startGame);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('intro').style.display !== 'none') {
+    startGame();
+  }
+});
+
+// ================ CLOCK ================
+setInterval(() => {
+  state.clock.m += 3;
+  if (state.clock.m >= 60) { state.clock.m -= 60; state.clock.h++; }
+  if (state.clock.h >= 24) state.clock.h = 0;
+  const p = n => String(n).padStart(2,'0');
+  document.getElementById('clock').textContent = `APR 20 · ${p(state.clock.h)}:${p(state.clock.m)}`;
+}, 4000);
+
+// ================ WALKER ================
+const walker = document.getElementById('walker');
+const world = document.getElementById('world');
+let targetX = null, targetY = null, walkerX = 50, walkerY = 50;
+world.addEventListener('click', (e) => {
+  initAudio();
+  const rect = world.getBoundingClientRect();
+  targetX = ((e.clientX - rect.left) / rect.width) * 100;
+  targetY = ((e.clientY - rect.top) / rect.height) * 100;
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.left = (e.clientX - rect.left) + 'px';
+  r.style.top = (e.clientY - rect.top) + 'px';
+  world.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+});
+document.querySelectorAll('.location').forEach(loc => {
+  loc.addEventListener('click', (e) => {
+    e.stopPropagation();
+    initAudio();
+    const rect = world.getBoundingClientRect();
+    const lr = loc.getBoundingClientRect();
+    targetX = ((lr.left + lr.width/2 - rect.left) / rect.width) * 100;
+    targetY = ((lr.top + lr.height - rect.top) / rect.height) * 100 - 4;
+    setTimeout(() => openModal(loc.dataset.scene), 500);
+    triggerWatching();
+  });
+});
+function walkStep() {
+  if (targetX === null) return;
+  const dx = targetX - walkerX, dy = targetY - walkerY;
+  const d = Math.hypot(dx, dy);
+  if (d < 0.5) { targetX = null; return; }
+  walkerX += (dx/d) * 0.9;
+  walkerY += (dy/d) * 0.9;
+  walker.style.left = walkerX + '%';
+  walker.style.top = walkerY + '%';
+  walker.style.transform = `translateY(${Math.sin(Date.now()/80)*1.5}px)`;
+}
+setInterval(walkStep, 40);
+
+// ================ NPCs ================
+const NPC_NAMES = ['Maya','Dan','Kim','Jo','Sam','Riku','Ava'];
+const NPC_IDS = ['4C-09','3C-04','5C-11','4C-22','2A-03'];
+document.querySelectorAll('.npc').forEach((n, i) => {
+  const colors = ['#3498db', '#f4837a', '#8fd87a', '#d4dc42'];
+  n.innerHTML = `<div class="head"></div><div class="body" style="background:${colors[i%4]};"></div><div class="legs"></div>`;
+  n._name = NPC_NAMES[i] || 'Neighbor';
+  n._unit = NPC_IDS[i] || '4C-??';
+});
+function triggerWatching() {
+  document.querySelectorAll('.npc').forEach(n => {
+    if (Math.random() < 0.85) {
+      n.classList.add('watching');
+      setTimeout(() => n.classList.remove('watching'), 3500);
+    }
+  });
+}
+function npcSay(npc, text) {
+  const b = document.createElement('div');
+  b.className = 'chat-bubble';
+  b.textContent = text;
+  npc.appendChild(b);
+  setTimeout(() => b.remove(), 4000);
+}
+setInterval(() => {
+  document.querySelectorAll('.npc').forEach(n => {
+    if (n.classList.contains('watching')) return;
+    const hx = parseFloat(n.dataset.homeX), hy = parseFloat(n.dataset.homeY);
+    n.style.left = (hx + (Math.random()-0.5)*4) + '%';
+    n.style.top = (hy + (Math.random()-0.5)*3) + '%';
+  });
+}, 3000);
+
+// ================ MODALS ================
+let currentScene = null;
+function openModal(name) {
+  initAudio();
+  currentScene = name;
+  document.getElementById('modal-' + name).classList.add('open');
+  if (name === 'gas') setupGas();
+  if (name === 'market') setupMarket();
+  if (name === 'parking') setupParking();
+  if (name === 'trash') setupTrash();
+  if (name === 'dealer') setupDealer();
+  if (name === 'bank') setupBank();
+  if (name === 'estate') setupEstate();
+}
+function closeModal() {
+  document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
+  stopParking();
+  stopTrashBeep();
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  currentScene = null;
+}
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModal(); });
+});
+
+// ================ SCENE: GAS ================
+let gasRandom = {};
+function setupGas() {
+  const amount = randPick(GAS_AMOUNTS);
+  const plate = state.plate;
+  const pump = randPick(PUMPS);
+  const count = state.visits.gas + 1;
+  const caption = randPick(GAS_CAPTIONS);
+  const bubbles = randPick(GAS_BUBBLES);
+  gasRandom = { amount, plate, pump, count, caption, bubbles };
+
+  document.getElementById('gas-big').textContent = `+${amount} kg`;
+  document.getElementById('gas-plate').textContent = plate;
+  document.getElementById('gas-count').textContent = (state.visits.gas + 1);
+  document.getElementById('gas-pump').textContent = pump;
+  document.getElementById('gas-caption').textContent = caption;
+  const loudText = `"Attention. Plate ${plate.replace('-',' ')}, pump ${pump}, ${amount} kilograms carbon."`;
+  document.getElementById('gas-loud-text').textContent = loudText;
+
+  // crowd bubbles
+  const crowd = document.getElementById('gas-crowd');
+  crowd.innerHTML = '';
+  bubbles.forEach(t => {
+    const w = document.createElement('div');
+    w.className = 'gas-watcher';
+    w.innerHTML = `<div class="bubble">${t}</div><div class="emoji">👁</div>`;
+    crowd.appendChild(w);
+  });
+
+  // Sound: alarm + loudspeaker voice
+  buzzer();
+  setTimeout(() => buzzer(), 300);
+  setTimeout(() => {
+    beep(440, 0.2, 'square', 0.08);
+  }, 700);
+}
+
+// ================ SCENE: MARKET ================
+function setupMarket() {
+  const items = randPick(MKT_POOLS);
+  const total = items.reduce((s,i)=>s+i.c, 0).toFixed(1);
+  document.getElementById('mkt-total').textContent = total;
+  document.getElementById('mkt-total-2').textContent = total;
+  document.getElementById('mkt-worse').textContent = randPick(MKT_WORSE) + ' OF THIS LANE';
+  document.getElementById('cashier-line').textContent = randPick(CASHIER_LINES);
+  const p = n => String(n).padStart(2,'0');
+  document.getElementById('mkt-time').textContent = `${p(state.clock.h)}:${p(state.clock.m)}`;
+  const list = document.getElementById('mkt-items');
+  list.innerHTML = items.map(i =>
+    `<div class="r-row ${i.hi?'hi':''}"><span>${i.n}</span><span>${i.c} kg</span></div>`
+  ).join('');
+
+  // Chime as total appears
+  chime();
+  setTimeout(() => beep(880, 0.15, 'sine', 0.08), 400);
+}
+
+// ================ SCENE: PARKING ================
+let parkT = null;
+function setupParking() {
+  const arm = document.getElementById('park-arm');
+  const timer = document.getElementById('park-timer');
+  const sign = document.getElementById('park-sign');
+  const car = document.getElementById('park-car');
+  const honk = document.getElementById('park-honk');
+  const behind = document.getElementById('park-behind');
+  const yell = document.getElementById('driver-yell');
+  arm.classList.remove('open');
+  timer.classList.remove('done');
+  car.style.left = '8%';
+  behind.classList.remove('visible');
+  sign.textContent = 'HIGH-CARBON VEHICLE';
+  sign.style.background = '#f4837a';
+  sign.style.color = '#fff';
+  document.getElementById('park-plate-text').textContent = state.plate;
+  yell.textContent = randPick(DRIVER_YELLS);
+  honk.innerHTML = '';
+
+  // Check carbon grade — only stall if grade is C or worse (co2 > 12)
+  const isHighCarbon = state.co2 > 12;
+
+  if (!isHighCarbon) {
+    // Good grade — gate opens immediately, no drama
+    sign.textContent = 'VERIFIED';
+    sign.style.background = '#8fd87a';
+    sign.style.color = '#4a3728';
+    timer.textContent = 'GO';
+    timer.classList.add('done');
+    arm.classList.add('open');
+    chime();
+    setTimeout(() => { car.style.left = '68%'; }, 400);
+    return;
+  }
+
+  // Bad grade — 3 second shame delay with honks
+  let t = 3;
+  timer.textContent = t;
+  buzzer();
+  setTimeout(() => behind.classList.add('visible'), 500);
+  setTimeout(() => honkSound(), 900);
+  parkT = setInterval(() => {
+    t -= 1;
+    timer.textContent = t;
+    if (t > 0) {
+      honkSound();
+      const h = document.createElement('span');
+      h.className = 'h';
+      h.textContent = 'HONK!';
+      honk.appendChild(h);
+      if (t === 2) setTimeout(() => honkSound(0.7), 200);
+    }
+    if (t <= 0) {
+      clearInterval(parkT); parkT = null;
+      arm.classList.add('open');
+      timer.classList.add('done');
+      timer.textContent = 'GO';
+      sign.textContent = 'RELEASED';
+      sign.style.background = '#8fd87a';
+      sign.style.color = '#4a3728';
+      chime();
+      car.style.left = '68%';
+    }
+  }, 1000);
+}
+function stopParking() {
+  if (parkT) { clearInterval(parkT); parkT = null; }
+}
+
+// ================ SCENE: TRASH ================
+function setupTrash() {
+  document.getElementById('trash-handle').textContent = state.handle;
+  document.getElementById('trash-broadcast-text').textContent =
+    `"${state.handle} over quota. Again."`;
+
+  // randomize neighbor sayings
+  const says = randPick(NEIGHBOR_LINES);
+  const neighbors = document.querySelectorAll('.trash-neighbor');
+  [0,1,2].forEach(idx => {
+    const sayEl = neighbors[idx].querySelector('.neighbor-say');
+    if (sayEl) {
+      sayEl.textContent = says[idx % says.length].replace('4C-12', state.handle);
+      sayEl.style.animation = 'none';
+      void sayEl.offsetWidth;
+      sayEl.style.animation = '';
+    }
+  });
+
+  buzzer();
+  setTimeout(() => buzzer(), 300);
+  setTimeout(() => {
+    const spoken = state.handle.replace('@', '').replace(/_/g, ' ');
+    beep(300, 0.3, 'square', 0.08);
+  }, 700);
+}
+function stopTrashBeep() { /* no-op, morse removed */ }
+
+// ================ SCENE: DEALER ================
+const DEALER_CAPTIONS = [
+  'The billboard updates the second you sign.',
+  'Three people on the lot just checked their phones.',
+  'Your neighbor works here. He saw everything.',
+  'The showroom windows face the street. Everyone can see.',
+];
+const DEALER_BUBBLES = [
+  ['a SPORTS CAR??','bruh','that\'s bold'],
+  ['no way','the emissions tho','😬'],
+  ['absolute menace','this guy','wow ok'],
+];
+let dealerRandom = {};
+function setupDealer() {
+  const caption = randPick(DEALER_CAPTIONS);
+  const bubbles = randPick(DEALER_BUBBLES);
+  dealerRandom = { caption, bubbles };
+  document.getElementById('dealer-caption').textContent = caption;
+  const crowd = document.getElementById('dealer-crowd');
+  crowd.innerHTML = '';
+  bubbles.forEach(t => {
+    const w = document.createElement('div');
+    w.className = 'gas-watcher';
+    w.innerHTML = `<div class="bubble">${t}</div><div class="emoji">👁</div>`;
+    crowd.appendChild(w);
+  });
+  // Start VN intro dialogue first
+  const co2 = state.co2;
+  const overBudget = co2 > 6;
+  const lines = overBudget ? [
+    { char: 'chad', text: `Well well well! Welcome to Mega Motors!` },
+    { char: 'chad', text: `Let me pull up your carbon profile real quick...` },
+    { char: 'chad', text: `Ohhh. ${co2.toFixed(1)} kg today. That's... hm.` },
+    { char: 'chad', text: `Look — I'm not gonna tell you what to do. But the billboard WILL.` },
+    { char: 'chad', text: `That sports car? +88 kg. Your neighbors are gonna LOVE that.` },
+    { char: 'chad', text: `Anyway. Pick a car. The whole block gets notified the second you sign.` },
+  ] : [
+    { char: 'chad', text: `Hey! Welcome to Mega Motors, friend!` },
+    { char: 'chad', text: `Let me check your carbon profile... oh nice, still under budget.` },
+    { char: 'chad', text: `That won't last if you pick the sports car though. Just saying.` },
+    { char: 'chad', text: `Take a look. Everyone's watching anyway.` },
+  ];
+  startVNSequence(lines);
+}
+function buyVehicle(type, co2) {
+  clickSfx();
+  dealerRandom.co2 = co2;
+  dealerRandom.type = type;
+  // Post-purchase VN reaction
+  const lines = co2 >= 55 ? [
+    { char: 'chad', text: `A ${type}! Bold choice. Very bold.` },
+    { char: 'chad', text: `+${co2} kg on your carbon tab. The billboard is updating... now.` },
+    { char: 'chad', text: `Your block chat is probably blowing up already. Good luck out there.` },
+  ] : [
+    { char: 'chad', text: `Solid pick. +${co2} kg — could be worse.` },
+    { char: 'chad', text: `Your neighbors will still know though. They always know.` },
+  ];
+  startVNSequence(lines, () => resolveScene('dealer'));
+}
+
+// ================ SCENE: BANK ================
+const BANKER_LINES = [
+  '"Your carbon liability is factored into every application."',
+  '"This screen is visible to the lobby. Company policy."',
+  '"I don\'t make the rules. Carbon score IS your credit score."',
+  '"The algorithm doesn\'t lie. Neither does that screen."',
+];
+function setupBank() {
+  const co2 = state.co2;
+  const over = Math.max(0, co2 - 6);
+  let score, label, eligible, status, stamp, risk;
+  if (co2 <= 6) { score=820; label='EXCELLENT'; eligible='Loan eligibility: <b>APPROVED</b>'; status='STANDARD RATE'; stamp='APPROVED'; risk='LOW'; }
+  else if (co2 <= 15) { score=680; label='FAIR'; eligible='Loan eligibility: <b>HIGH INTEREST</b>'; status='ELEVATED RATE (+2.4%)'; stamp='CONDITIONAL'; risk='MEDIUM'; }
+  else if (co2 <= 30) { score=520; label='POOR'; eligible='Loan eligibility: <b>UNDER REVIEW</b>'; status='HIGH RISK SURCHARGE'; stamp='FLAGGED'; risk='HIGH'; }
+  else { score=340; label='DENIED'; eligible='Loan eligibility: <b style="color:#f4837a">DENIED</b>'; status='APPLICATION REJECTED'; stamp='DENIED'; risk='EXTREME'; }
+  document.getElementById('bank-score').textContent = score;
+  document.getElementById('bank-label').textContent = label;
+  document.getElementById('bank-eligibility').innerHTML = eligible;
+  document.getElementById('bank-status').textContent = status;
+  document.getElementById('bank-stamp').textContent = stamp;
+  document.getElementById('bank-used').innerHTML = `<span>Used today</span><span>${co2.toFixed(1)} kg</span>`;
+  document.getElementById('bank-over').innerHTML = `<span>Over by</span><span>+${over.toFixed(1)} kg</span>`;
+  document.getElementById('bank-risk').innerHTML = `<span>Risk level</span><span>${risk}</span>`;
+  document.getElementById('bank-decision').textContent = stamp;
+  document.getElementById('banker-line').textContent = randPick(BANKER_LINES);
+  if (co2 > 15) { buzzer(); setTimeout(buzzer, 300); }
+  else chime();
+  // VN intro dialogue
+  const lines = co2 > 30 ? [
+    { char: 'banker', text: `Good morning. Please have a seat.` },
+    { char: 'banker', text: `Let me pull up your carbon credit score...` },
+    { char: 'banker', text: `...` },
+    { char: 'banker', text: `${co2.toFixed(1)} kg. That puts you at a score of ${score}.` },
+    { char: 'banker', text: `I'm sorry. Your carbon liability is too high. Application denied.` },
+    { char: 'banker', text: `The lobby screen is already showing your result. I can't turn it off. Policy.` },
+    { char: 'banker', text: `Everyone in line can see. I'd suggest... leaving quickly.` },
+  ] : co2 > 15 ? [
+    { char: 'banker', text: `Welcome. Let's review your application.` },
+    { char: 'banker', text: `Carbon score: ${score}. That's... not great.` },
+    { char: 'banker', text: `We can process it, but with a high-risk surcharge. Your rate goes up.` },
+    { char: 'banker', text: `Also — the lobby display is showing your carbon profile right now.` },
+    { char: 'banker', text: `The gentleman behind you just looked up. You might want to hurry.` },
+  ] : co2 > 6 ? [
+    { char: 'banker', text: `Hello! Let me check your carbon credit score.` },
+    { char: 'banker', text: `Score: ${score}. You're over budget but it's not terrible.` },
+    { char: 'banker', text: `We can approve this at an elevated rate. Fair warning — it's on the screen.` },
+  ] : [
+    { char: 'banker', text: `Good morning! Pulling up your profile...` },
+    { char: 'banker', text: `Score: ${score}. Excellent. Under budget.` },
+    { char: 'banker', text: `Approved at standard rate. Keep it up.` },
+  ];
+  startVNSequence(lines);
+}
+
+// ================ SCENE: ESTATE ================
+const ESTATE_CAPTIONS = [
+  'Your HOA gets a push notification with your carbon profile.',
+  'The realtor cc\'d the block chat on your application.',
+  'Welcome to the neighborhood. Everyone already knows your kg.',
+  'The "sold" sign comes with your carbon stats on it.',
+];
+const ESTATE_BUBBLES = [
+  ['a MANSION??','there goes the block avg','my god'],
+  ['who IS this','the AC bill alone','rip ice caps'],
+  ['absolutely wild','posting this','bold move'],
+];
+let estateRandom = {};
+function setupEstate() {
+  const caption = randPick(ESTATE_CAPTIONS);
+  const bubbles = randPick(ESTATE_BUBBLES);
+  estateRandom = { caption, bubbles };
+  document.getElementById('estate-caption').textContent = caption;
+  const crowd = document.getElementById('estate-crowd');
+  crowd.innerHTML = '';
+  bubbles.forEach(t => {
+    const w = document.createElement('div');
+    w.className = 'gas-watcher';
+    w.innerHTML = `<div class="bubble">${t}</div><div class="emoji">👁</div>`;
+    crowd.appendChild(w);
+  });
+  // VN intro dialogue
+  const co2 = state.co2;
+  const overBudget = co2 > 6;
+  const lines = overBudget ? [
+    { char: 'brenda', text: `Hi there! Welcome to Dream Homes Realty!` },
+    { char: 'brenda', text: `So you're looking for a new place! Let me review your carbon profile first...` },
+    { char: 'brenda', text: `Oh. ${co2.toFixed(1)} kg today. That's... above the community threshold.` },
+    { char: 'brenda', text: `This neighborhood has strict environmental standards. Very green. Very nice.` },
+    { char: 'brenda', text: `Based on your past emissions, the HOA review might not... go well.` },
+    { char: 'brenda', text: `But hey — you can still try! The application is public though. Everyone sees it.` },
+  ] : [
+    { char: 'brenda', text: `Welcome to Dream Homes! Let's find you the perfect place.` },
+    { char: 'brenda', text: `Your carbon profile looks great! Under budget. The HOA will love you.` },
+    { char: 'brenda', text: `Just remember — a mansion adds 120 kg monthly. That changes things fast.` },
+    { char: 'brenda', text: `Take a look at our listings!` },
+  ];
+  startVNSequence(lines);
+}
+function buyHome(type, co2) {
+  clickSfx();
+  estateRandom.co2 = co2;
+  estateRandom.type = type;
+  // Post-purchase VN reaction
+  const lines = co2 >= 60 ? [
+    { char: 'brenda', text: `A ${type}! Congratulations! ...and condolences.` },
+    { char: 'brenda', text: `+${co2} kg per month. The HOA just got your carbon profile.` },
+    { char: 'brenda', text: `I'm sure the welcome committee will be... interesting.` },
+  ] : [
+    { char: 'brenda', text: `Great choice! +${co2} kg. The paperwork is going to the HOA now.` },
+    { char: 'brenda', text: `Your new neighbors will know your carbon stats before they know your name.` },
+  ];
+  startVNSequence(lines, () => resolveScene('estate'));
+}
+
+// ================ PROGRESSIVE REACTIONS ================
+// Each scene has a ladder of reactions — stage 0 = first time, stage N = they're sick of you
+const REACTIONS = {
+  gas: [
+    { // 1st
+      sys: (r) => `${r.plate} · pump ${r.pump} · +${r.co2} kg. Announced.`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `oh! ${state.handle} fills up with premium huh` },
+        { who: '🔵 @dan3c', t: `saw you at the pump 👋` },
+      ],
+    },
+    { // 2nd
+      sys: (r) => `${r.plate} AGAIN · pump ${r.pump} · +${r.co2} kg.`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `wasn't ${state.handle} just there yesterday??` },
+        { who: '🟢 @maya_g', t: `${r.co2}kg is a LOT bro` },
+        { who: '🟠 @rikudoj', t: `lmao the billboard flashed twice this week` },
+      ],
+    },
+    { // 3rd
+      sys: (r) => `⚠ ${r.plate} · 3rd fill this week · +${r.co2} kg.`,
+      chat: (r) => [
+        { who: '🔵 @dan3c', t: `${state.handle}... third time?` },
+        { who: '🟡 @kimbo', t: `does he commute to the MOON` },
+        { who: '🟣 @jo4c', t: `posting the billboard pic in #block-4c` },
+        { who: '🟢 @maya_g', t: `maybe we should… talk to him?` },
+      ],
+    },
+    { // 4+
+      sys: (r) => `🚨 ${r.plate} · OVER-FREQUENCY · +${r.co2} kg broadcast to street.`,
+      chat: (r) => [
+        { who: '🟠 @rikudoj', t: `no way ${state.handle} is at the pump AGAIN` },
+        { who: '🟡 @kimbo', t: `i'm literally keeping a tally now` },
+        { who: '🔵 @dan3c', t: `bro get an EV I'm begging` },
+        { who: '🟣 @jo4c', t: `motion to rename him @PUMPKING` },
+        { who: '🟢 @maya_g', t: `ok this is a problem` },
+      ],
+    },
+  ],
+  market: [
+    {
+      sys: (r) => `🛒 Mart Lane 2 · receipt printed · ${r.co2} kg CO₂e`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `was that ${state.handle} with the ribeye??` },
+        { who: '🟢 @maya_g', t: `the lane 2 screen was BRIGHT red lol` },
+      ],
+    },
+    {
+      sys: (r) => `🛒 Lane 2 · ${r.co2} kg · 2nd red-total this week.`,
+      chat: (r) => [
+        { who: '🟠 @rikudoj', t: `another ${r.co2}kg cart from ${state.handle}??` },
+        { who: '🔵 @dan3c', t: `the cashier made a FACE` },
+        { who: '🟡 @kimbo', t: `who eats 12kg of beef weekly genuine q` },
+      ],
+    },
+    {
+      sys: (r) => `⚠ ${r.co2} kg · ${state.handle} flagged for habitual red-lane.`,
+      chat: (r) => [
+        { who: '🟣 @jo4c', t: `HABITUAL RED LANE is wild` },
+        { who: '🟢 @maya_g', t: `posting "the meat guy" in #block-4c` },
+        { who: '🔵 @dan3c', t: `${state.handle} = the meat guy ✍️` },
+        { who: '🟡 @kimbo', t: `my kid asked what red lane means. thanks.` },
+      ],
+    },
+  ],
+  parking: [
+    {
+      sys: (r) => `🅿 Gate 2 · 3s stall · ${state.plate}`,
+      chat: (r) => [
+        { who: '🔵 @dan3c', t: `heard a honk from 4 blocks away lol` },
+        { who: '🟢 @maya_g', t: `${state.handle} got paused at the gate 👀` },
+      ],
+    },
+    {
+      sys: (r) => `🅿 Gate 2 · 3s stall · ${state.plate} (2nd today)`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `was that ${state.handle}'s V8 again?` },
+        { who: '🟠 @rikudoj', t: `the HONKS. twice in one day.` },
+        { who: '🔵 @dan3c', t: `gate doesn't forget bro` },
+      ],
+    },
+    {
+      sys: (r) => `🚨 Gate 2 · repeat stall · ${state.handle} (${r.count}x)`,
+      chat: (r) => [
+        { who: '🟣 @jo4c', t: `i can SET MY WATCH to ${state.handle}'s honks` },
+        { who: '🟢 @maya_g', t: `the guy behind him is going to lose it` },
+        { who: '🔵 @dan3c', t: `#block-4c petition: no more V8s at gate 2` },
+        { who: '🟡 @kimbo', t: `🎺🎺🎺` },
+      ],
+    },
+  ],
+  trash: [
+    {
+      sys: (r) => `♻ Waste 4C · ${state.handle} over quota. Broadcast sent.`,
+      chat: (r) => [
+        { who: '🔵 @dan3c', t: `my phone just buzzed with ${state.handle}'s name 😬` },
+        { who: '🟢 @maya_g', t: `first time? welcome to the list` },
+      ],
+    },
+    {
+      sys: (r) => `♻ Waste 4C · ${state.handle} over quota (2nd time).`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `${state.handle} on the notif again ‼` },
+        { who: '🟠 @rikudoj', t: `twice in a week?? my screen is tired` },
+        { who: '🔵 @dan3c', t: `muting the alerts won't fix YOU bro` },
+      ],
+    },
+    {
+      sys: (r) => `🚨 ${state.handle} · HABITUAL OVER-QUOTA · broadcast pinned to #block-4c`,
+      chat: (r) => [
+        { who: '🟣 @jo4c', t: `PINNING ${state.handle}'s alerts in #block-4c` },
+        { who: '🟢 @maya_g', t: `ok who's knocking on his door` },
+        { who: '🟡 @kimbo', t: `i'll bring a compost bin as a gift 🎁` },
+        { who: '🔵 @dan3c', t: `this is basically a saga now` },
+      ],
+    },
+  ],
+  dealer: [
+    {
+      sys: (r) => `🚗 Mega Motors · ${state.handle} purchased ${r.type || 'vehicle'} · +${r.co2} kg`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `wait ${state.handle} just bought a car??` },
+        { who: '🔵 @dan3c', t: `the billboard updated instantly lmao` },
+      ],
+    },
+    {
+      sys: (r) => `🚗 Mega Motors · ${state.handle} ANOTHER vehicle · +${r.co2} kg`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `how many cars does this person NEED` },
+        { who: '🟠 @rikudoj', t: `the showroom has windows bro. we all saw.` },
+        { who: '🔵 @dan3c', t: `${r.co2}kg for a CAR? get a bike dude` },
+      ],
+    },
+    {
+      sys: (r) => `🚨 Mega Motors · ${state.handle} · serial buyer · +${r.co2} kg · block notified`,
+      chat: (r) => [
+        { who: '🟣 @jo4c', t: `${state.handle} is collecting cars like pokemon` },
+        { who: '🟢 @maya_g', t: `the salesman literally high-fived him and i want to cry` },
+        { who: '🟡 @kimbo', t: `petition to add a carbon tax at the dealership entrance` },
+        { who: '🔵 @dan3c', t: `block 4C avg just went up because of ONE person` },
+      ],
+    },
+  ],
+  bank: [
+    {
+      sys: (r) => `🏦 Carbon Credit Bank · ${state.handle} · application submitted · lobby display active`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `someone's carbon score just popped up on the bank lobby screen` },
+        { who: '🔵 @dan3c', t: `was that ${state.handle}?? i was in LINE` },
+      ],
+    },
+    {
+      sys: (r) => `🏦 Bank · ${state.handle} · 2nd application · lobby crowd watching`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `${state.handle} at the bank AGAIN. the screen was bright red.` },
+        { who: '🟠 @rikudoj', t: `i heard the teller sigh from across the lobby` },
+        { who: '🔵 @dan3c', t: `your carbon score is your credit score now welcome to the future` },
+      ],
+    },
+    {
+      sys: (r) => `🚨 Bank · ${state.handle} · FLAGGED · carbon liability too high`,
+      chat: (r) => [
+        { who: '🟣 @jo4c', t: `LMAOO ${state.handle} got DENIED at the bank` },
+        { who: '🟢 @maya_g', t: `everyone in the lobby saw the "DENIED" screen. brutal.` },
+        { who: '🟡 @kimbo', t: `the security guard looked at him different after that` },
+        { who: '🔵 @dan3c', t: `maybe don't buy 3 SUVs before applying for a mortgage idk` },
+      ],
+    },
+  ],
+  estate: [
+    {
+      sys: (r) => `🏠 Dream Homes · ${state.handle} bought ${r.type || 'property'} · +${r.co2} kg · HOA notified`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `new neighbor alert... and their carbon profile is attached` },
+        { who: '🔵 @dan3c', t: `${r.co2}kg from a HOUSE? what is it heated by, burning tires?` },
+      ],
+    },
+    {
+      sys: (r) => `🏠 Dream Homes · ${state.handle} · 2nd property · +${r.co2} kg`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `${state.handle} buying ANOTHER property?? with that carbon score??` },
+        { who: '🟠 @rikudoj', t: `the "sold" sign literally has their kg on it` },
+        { who: '🔵 @dan3c', t: `the HOA group chat is on FIRE rn` },
+      ],
+    },
+    {
+      sys: (r) => `🚨 Dream Homes · ${state.handle} · MANSION · +${r.co2} kg · entire block notified`,
+      chat: (r) => [
+        { who: '🟣 @jo4c', t: `a MANSION?? ${state.handle} really said "climate change is a suggestion"` },
+        { who: '🟢 @maya_g', t: `the realtor cc'd #block-4c on the closing docs. with the carbon breakdown.` },
+        { who: '🟡 @kimbo', t: `that mansion uses more energy than our entire building` },
+        { who: '🔵 @dan3c', t: `welcome to the neighborhood. we hate you already 💚` },
+      ],
+    },
+  ],
+};
+
+// Friendly chat when grade is C or above — neighbors are nice
+const FRIENDLY_REACTIONS = {
+  gas: [
+    { sys: (r) => `${r.plate} · pump ${r.pump} · +${r.co2} kg. Logged.`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `${state.handle} at the pump! staying green tho 💚` },
+        { who: '🔵 @dan3c', t: `honestly respect, your numbers are solid` },
+      ]},
+    { sys: (r) => `${r.plate} · pump ${r.pump} · +${r.co2} kg.`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `${state.handle} keeps it modest 👏` },
+        { who: '🟢 @maya_g', t: `wish everyone here was like you tbh` },
+      ]},
+  ],
+  market: [
+    { sys: (r) => `🛒 Mart Lane 2 · receipt printed · ${r.co2} kg CO₂e`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `${state.handle} shopping green 🥬 love to see it` },
+        { who: '🔵 @dan3c', t: `that's a clean cart right there` },
+      ]},
+    { sys: (r) => `🛒 Lane 2 · ${r.co2} kg · within budget.`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `${state.handle} again with the healthy cart 👀` },
+        { who: '🟠 @rikudoj', t: `teach me your ways honestly` },
+      ]},
+  ],
+  parking: [
+    { sys: (r) => `🅿 Gate 2 · verified · ${state.plate}`,
+      chat: (r) => [
+        { who: '🔵 @dan3c', t: `${state.handle} sailed right through the gate 😎` },
+        { who: '🟢 @maya_g', t: `no honks! that's what good numbers look like` },
+      ]},
+    { sys: (r) => `🅿 Gate 2 · smooth entry · ${state.plate}`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `gate opened INSTANTLY for ${state.handle}. goals.` },
+        { who: '🔵 @dan3c', t: `when u keep ur grade up the gate respects u` },
+      ]},
+  ],
+  trash: [
+    { sys: (r) => `♻ Waste 4C · ${state.handle} within quota. No alert.`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `${state.handle} composting like a pro 🌱` },
+        { who: '🔵 @dan3c', t: `no alarm today! block 4c is healing` },
+      ]},
+    { sys: (r) => `♻ Waste 4C · ${state.handle} on track.`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `love that ${state.handle} actually sorts properly` },
+        { who: '🟠 @rikudoj', t: `the bin room is peaceful today thanks to u` },
+      ]},
+  ],
+  dealer: [
+    { sys: (r) => `🚗 Mega Motors · ${state.handle} browsing · profile looks clean`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `${state.handle} at the dealership! hope they go electric 🔋` },
+        { who: '🔵 @dan3c', t: `their carbon profile is clean tho, they earned it` },
+      ]},
+    { sys: (r) => `🚗 Mega Motors · ${state.handle} · +${r.co2} kg · low overall`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `at least ${state.handle} has the budget for it` },
+        { who: '🟠 @rikudoj', t: `when ur grade is good nobody cares 🤷` },
+      ]},
+  ],
+  bank: [
+    { sys: (r) => `🏦 Carbon Credit Bank · ${state.handle} · application approved · good standing`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `${state.handle} walked into the bank like a VIP 💳` },
+        { who: '🔵 @dan3c', t: `green score = green light. simple.` },
+      ]},
+    { sys: (r) => `🏦 Bank · ${state.handle} · smooth approval`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `the teller literally smiled at ${state.handle}` },
+        { who: '🟠 @rikudoj', t: `that's what a good carbon score gets you` },
+      ]},
+  ],
+  estate: [
+    { sys: (r) => `🏠 Dream Homes · ${state.handle} · property tour · HOA pre-approved`,
+      chat: (r) => [
+        { who: '🟢 @maya_g', t: `new neighbor incoming! and they're GREEN 💚` },
+        { who: '🔵 @dan3c', t: `finally someone with a good score moving in` },
+      ]},
+    { sys: (r) => `🏠 Dream Homes · ${state.handle} · clean profile · welcome packet sent`,
+      chat: (r) => [
+        { who: '🟡 @kimbo', t: `HOA actually WANTS ${state.handle} in the building wow` },
+        { who: '🟠 @rikudoj', t: `they're rolling out the green carpet 🟩` },
+      ]},
+  ],
+};
+
+function getReactionStage(scene) {
+  const v = state.visits[scene];
+  // If grade is C or above (co2 <= 24), use friendly reactions
+  if (state.co2 <= 24) {
+    const friendly = FRIENDLY_REACTIONS[scene];
+    return friendly[Math.min(v, friendly.length - 1)];
+  }
+  const ladder = REACTIONS[scene];
+  return ladder[Math.min(v, ladder.length - 1)];
+}
+
+// ================ RESOLVE ================
+function resolveScene(name) {
+  state.visits[name] += 1;
+  const stage = getReactionStage(name);
+  let co2, shame, wit;
+  let ctx = { plate: state.plate };
+
+  if (name === 'gas') {
+    co2 = gasRandom.amount || 42;
+    shame = 18; wit = 16;
+    ctx.co2 = co2;
+    ctx.pump = gasRandom.pump;
+  } else if (name === 'market') {
+    co2 = parseFloat(document.getElementById('mkt-total').textContent);
+    shame = 14; wit = 6;
+    ctx.co2 = co2;
+  } else if (name === 'parking') {
+    co2 = 3; shame = 8; wit = 4;
+    ctx.count = state.visits.parking;
+  } else if (name === 'trash') {
+    co2 = 6; shame = 12; wit = 3;
+  } else if (name === 'dealer') {
+    co2 = dealerRandom.co2 || 22;
+    shame = 20; wit = 12;
+    ctx.co2 = co2; ctx.type = dealerRandom.type || 'vehicle';
+  } else if (name === 'bank') {
+    co2 = 2; shame = 16; wit = 8;
+  } else if (name === 'estate') {
+    co2 = estateRandom.co2 || 8;
+    shame = 22; wit = 14;
+    ctx.co2 = co2; ctx.type = estateRandom.type || 'property';
+  }
+
+  feedMsg('sys', '📡 CSS.GOV', stage.sys(ctx));
+  const chats = stage.chat(ctx);
+  chats.forEach((m, i) => {
+    setTimeout(() => feedMsg('user', m.who, m.t), 2000 + i * 5000);
+  });
+
+  state.co2 += co2;
+  state.shame += shame;
+  state.witnesses += wit;
+  floatShame(name, '+' + shame);
+  updateStats();
+  renderRank();
+  closeModal();
+}
+function floatShame(name, text) {
+  const loc = document.querySelector(`.location[data-scene="${name}"]`);
+  if (!loc) return;
+  const rect = loc.getBoundingClientRect();
+  const wr = world.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'shame-float';
+  el.textContent = text + ' SHAME';
+  el.style.left = (rect.left + rect.width/2 - wr.left) + 'px';
+  el.style.top = (rect.top - wr.top + 10) + 'px';
+  world.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
+// ================ FEED (chat-style) ================
+function feedMsg(kind, who, text) {
+  const f = document.getElementById('feed');
+  const el = document.createElement('div');
+  el.className = 'msg' + (kind === 'sys' ? ' system' : '');
+  el.innerHTML = `<span class="who ${kind === 'sys' ? 'sys' : ''}">${who}</span><span class="text">${text}</span>`;
+  f.appendChild(el);
+  f.scrollTop = f.scrollHeight;
+  // keep last ~30
+  while (f.children.length > 30) f.removeChild(f.firstChild);
+}
+function randomNeighborChat(lines) {
+  const neighbors = [
+    '🟢 Maya (4C-09)', '🔵 Dan (3C-04)', '🟡 Kim (5C-11)', '🟠 Jo (4C-22)', '🟣 Riku (2A-03)',
+  ];
+  const picked = randPickN(neighbors, Math.min(lines.length, 3));
+  picked.forEach((who, i) => {
+    setTimeout(() => feedMsg('user', who, lines[i]), 500 + i * 1200);
+  });
+}
+
+// ================ STATS ================
+const DAILY_BUDGET = 6.0; // kg CO2/day personal climate budget
+// Polar bear framing: ~500 kg CO2 ≈ 1 m² Arctic sea ice lost ≈ polar bears displaced
+// We scale dramatically so the bears respond to normal-scale day: 1 bear per 15kg overshoot
+const BEARS_TOTAL = 10;
+const grades = [
+  { max: 3,  g: 'A+', l: 'MODEL CITIZEN', c: '#8fd87a' },
+  { max: 6,  g: 'A',  l: 'WITHIN BUDGET', c: '#8fd87a' },
+  { max: 12, g: 'B',  l: 'OVER BUDGET',   c: '#d4dc42' },
+  { max: 24, g: 'C',  l: 'HIGH-EMITTER',  c: '#f39c12' },
+  { max: 50, g: 'D',  l: 'CLIMATE DRAG',  c: '#ff6b5b' },
+  { max: 9999,g: 'F', l: 'PUBLIC CONCERN',c: '#f4837a' },
+];
+function updateStats() {
+  document.getElementById('stat-co2').textContent = state.co2.toFixed(1) + ' kg';
+  document.getElementById('stat-co2').classList.toggle('bad', state.co2 > DAILY_BUDGET);
+  document.getElementById('stat-shame').textContent = state.shame;
+  document.getElementById('stat-shame').classList.toggle('bad', state.shame > 10);
+  document.getElementById('stat-wit').textContent = state.witnesses;
+
+  // grade
+  const g = grades.find(x => state.co2 <= x.max);
+  const el = document.getElementById('grade');
+  el.textContent = g.g;
+  el.style.color = g.c;
+  document.getElementById('grade-label').textContent = g.l;
+  document.getElementById('bar-fill').style.width = Math.min(100, (state.co2/24)*100) + '%';
+
+  // budget framing
+  const over = Math.max(0, state.co2 - DAILY_BUDGET);
+  const pct = Math.round((state.co2 / DAILY_BUDGET) * 100);
+  const usedEl = document.getElementById('budget-used');
+  usedEl.textContent = state.co2.toFixed(1) + ' kg';
+  usedEl.className = 'v ' + (state.co2 > DAILY_BUDGET ? 'bad' : 'ok');
+
+  const overEl = document.getElementById('budget-over');
+  if (over > 0) {
+    overEl.textContent = `+${over.toFixed(1)} kg (${pct}%)`;
+    overEl.className = 'v bad';
+  } else {
+    overEl.textContent = `0 kg (${pct}%)`;
+    overEl.className = 'v ok';
+  }
+
+  // impact box — polar bears
+  const headline = document.getElementById('impact-headline');
+  const body = document.getElementById('impact-body');
+  const bearsEl = document.getElementById('impact-bears');
+  // polar bears killed: 1 per 15kg overshoot (fictional dramatic rate)
+  const bearsKilled = Math.min(BEARS_TOTAL, Math.floor(over / 10));
+  const dying = over > 0 && bearsKilled < BEARS_TOTAL ? 1 : 0;
+
+  if (over <= 0) {
+    headline.textContent = '✓ Within safe zone';
+    body.innerHTML = `Under the <b>6 kg/day</b> personal climate budget. Every citizen gets one.`;
+    bearsEl.innerHTML = Array.from({length: BEARS_TOTAL}, () => `<span class="b">🐻‍❄️</span>`).join('');
+  } else if (over < 15) {
+    headline.textContent = `⚠ Over budget by ${over.toFixed(1)} kg`;
+    body.innerHTML = `That's <b>${pct}%</b> of your daily ration. A polar bear somewhere is on thinner ice.`;
+    bearsEl.innerHTML = Array.from({length: BEARS_TOTAL}, (_, i) =>
+      `<span class="b ${i===0?'dying':''}">🐻‍❄️</span>`).join('');
+  } else {
+    headline.textContent = `🚨 +${over.toFixed(0)} kg over (${pct}%)`;
+    const bearTxt = bearsKilled === 1 ? '1 polar bear' : `${bearsKilled} polar bears`;
+    body.innerHTML = `That's enough carbon to melt the ice under <b>${bearTxt}</b>. Also: ~${Math.round(over*4)} km of gas driving, or ${Math.round(over/2.5)} ribeye steaks.`;
+    bearsEl.innerHTML = Array.from({length: BEARS_TOTAL}, (_, i) => {
+      if (i < bearsKilled) return `<span class="b dead">💀</span>`;
+      if (i === bearsKilled && dying) return `<span class="b dying">🐻‍❄️</span>`;
+      return `<span class="b">🐻‍❄️</span>`;
+    }).join('');
+  }
+}
+updateStats();
+
+// ================ RANK BOARD ================
+// Mega-names + climate villains injected into the block feed
+const BLOCK_ROSTER = [
+  { h: '@PLANTQUEEN_Sam',sub: 'unit 2A · vegan icon',     base: 1.4 },
+  { h: '@maya_g',        sub: 'unit 4C-09',                base: 2.1 },
+  { h: '@kimbo',         sub: 'unit 5C-11',                base: 3.4 },
+  { h: '@ava2a',         sub: 'unit 2A-03',                base: 3.9 },
+  { h: '@dan3c',         sub: 'unit 3C-04',                base: 4.8 },
+  { h: '@rikudoj',       sub: 'unit 4C-18',                base: 5.6 },
+  { h: '@jo4c',          sub: 'unit 4C-22 · V6',           base: 7.2 },
+  { h: '@GYMKING_Trevor',sub: 'unit 1B · gym AC 24/7',     base: 9.5 },
+  { h: '@CryptoBroLLC',  sub: 'unit 6A · 4 miners + hot tub', base: 32.0 },
+  // ↓ celebrity carbon villains
+  { h: '@TSwiftJet ✈',   sub: 'private jet · 170 flights/yr', base: 1184.0, vip: true },
+  { h: '@ElonYacht ⛴',   sub: '120m superyacht · idling',     base: 650.0, vip: true },
+  { h: '@BezosRocket 🚀', sub: 'Blue Origin · 1 joyride',     base: 2700.0, vip: true },
+  { h: '@DrakeCarbonDrake', sub: '767 private jet · OVO Air', base: 890.0, vip: true },
+  { h: '@KimK_PrivateAir', sub: '17-min flights · daily',     base: 720.0, vip: true },
+  { h: '@KylieJetSetter',  sub: '12-min hop to grocery store', base: 580.0, vip: true },
+  { h: '@DJ_Khaled_BigVan', sub: '14-car entourage · AC on idle', base: 440.0, vip: true },
+];
+
+let rankExpanded = false;
+function toggleRank() {
+  rankExpanded = !rankExpanded;
+  document.getElementById('rank-board').classList.toggle('expanded', rankExpanded);
+  renderRank();
+}
+function renderRank() {
+  const me = { h: state.handle, sub: 'unit 4C-12 · YOU', kg: state.co2, me: true };
+  const others = BLOCK_ROSTER.map(p => ({
+    h: p.h, sub: p.sub, vip: p.vip,
+    kg: p.base + (p.vip ? 0 : Math.random()*1.2),
+  }));
+  const all = [...others, me].sort((a,b) => b.kg - a.kg);
+  const board = document.getElementById('rank-board');
+  const myIdx = all.findIndex(x => x.me);
+
+  const renderRow = (p, i, divider=false) => {
+    const kgClass = p.kg > 20 ? 'bad' : (p.kg > 5 ? 'mid' : '');
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+    const kgTxt = p.kg >= 100 ? p.kg.toFixed(0) : p.kg.toFixed(1);
+    return `<div class="rank-row ${p.me ? 'me' : ''} ${divider?'divider':''}">
+      <span class="pos">${i+1}</span>
+      <span class="medal">${medal}</span>
+      <span class="who">${p.h}${p.me ? ' (you)' : ''}<small>${p.sub}</small></span>
+      <span class="kg ${kgClass}">${kgTxt} kg</span>
+    </div>`;
+  };
+
+  let rows;
+  if (rankExpanded) {
+    rows = all.map((p, i) => renderRow(p, i)).join('');
+  } else {
+    // Compact: top 3 + you (if not in top 3)
+    const top3 = all.slice(0, 3);
+    rows = top3.map((p, i) => renderRow(p, i)).join('');
+    if (myIdx >= 3) {
+      rows += renderRow(all[myIdx], myIdx, true);
+    }
+  }
+
+  const rankColor = myIdx < 3 ? '#ff6b5b' : '#d4dc42';
+  const toggleLabel = rankExpanded ? '▲ collapse' : `▼ show all ${all.length}`;
+  board.innerHTML = `<div class="rank-scroll">${rows}</div>` +
+    `<button class="rank-toggle" onclick="toggleRank()">${toggleLabel}</button>` +
+    `<div style="text-align:center; color:#6b8070; font-size:13px; padding-top:4px;">you rank <b style="color:${rankColor}">#${myIdx+1}</b> of ${all.length} today</div>`;
+  renderBillboard(all);
+}
+
+// ================ LIVE BILLBOARD ================
+function renderBillboard(all) {
+  // filter out VIPs for neighborhood board — they skew the view
+  const neighbors = all.filter(p => !p.vip);
+  const top = neighbors[0];
+  document.getElementById('bb-top-name').textContent = top.h + (top.me ? ' (YOU)' : '');
+  const kgTxt = top.kg >= 100 ? top.kg.toFixed(0) : top.kg.toFixed(1);
+  document.getElementById('bb-top-kg').textContent = `${kgTxt} kg CO₂e`;
+
+  const track = document.getElementById('bb-track');
+  // take top 6 + a couple VIPs for flavor
+  const vips = all.filter(p => p.vip).slice(0, 4);
+  const show = [...neighbors.slice(0, 5), ...vips];
+  const bg = (p, i) => {
+    const rank = p.vip ? '👑' : `#${neighbors.indexOf(p)+1}`;
+    const kg = p.kg >= 100 ? p.kg.toFixed(0) : p.kg.toFixed(1);
+    const sub = p.me ? 'THAT\'S YOU' : p.sub;
+    return `<div class="bb-item">
+      <span class="rank">${rank}</span>
+      <span class="name">${p.h}</span>
+      <span class="kg">${kg} kg</span>
+      <span class="sub">${sub}</span>
+    </div>`;
+  };
+  // double for seamless scroll
+  track.innerHTML = show.map(bg).join('') + show.map(bg).join('');
+}
+
+// ================ AMBIENT CHAT ================
+const AMBIENT = [
+  { who: '🟢 @maya_g', t: 'morning everyone' },
+  { who: '🔵 @dan3c', t: 'anyone have sugar i can borrow' },
+  { who: '🟡 @kimbo', t: 'composter is full again. who did this.' },
+  { who: '🟠 @jo4c', t: 'EV charger by 4C is open' },
+  { who: '🟣 @rikudoj', t: 'why is the billboard so loud at 6am' },
+  { who: '🔵 @dan3c', t: 'who is cooking garlic rn it smells incredible' },
+  { who: '🟢 @PLANTQUEEN_Sam', t: 'block avg is down to 3.8 lets gooo' },
+  { who: '🟡 @kimbo', t: 'lost a cat (orange, chubby) dm me pls' },
+  { who: '🔵 @dan3c', t: 'the bank lobby screen is visible from the STREET now' },
+  { who: '🟠 @jo4c', t: 'saw someone leave mega motors with a sports car. prayers up for their rating.' },
+  { who: '🟡 @kimbo', t: 'the mansion on 4th just got sold. entire block chat blew up.' },
+  { who: '🟢 @maya_g', t: 'do yall think the system actually changes behavior or do ppl just get numb' },
+  { who: '🔵 @dan3c', t: 'it changed MY behavior. i ride a bike now. partly from guilt partly from the honking.' },
+];
+
+// You've been recognized — doxx moments. Fire after first shame event.
+const RECOGNITION_LINES = [
+  [
+    { who: '🟡 @kimbo',    t: `wait ${state.handle} are you tom??` },
+    { who: '🟢 @maya_g',   t: 'tom from 4C-12???' },
+    { who: '🟡 @kimbo',    t: 'TOM IS THAT YOU' },
+    { who: '🔵 @dan3c',    t: 'lmaooo tom what happened to you' },
+  ],
+  [
+    { who: '🟠 @jo4c',     t: `hold on... ${state.handle} = tom right??` },
+    { who: '🟣 @rikudoj',  t: 'yeah the guy with the red civic' },
+    { who: '🟠 @jo4c',     t: 'tom we can literally SEE you' },
+    { who: '🟢 @maya_g',   t: 'hi tom' },
+  ],
+  [
+    { who: '🔵 @dan3c',    t: `yo that plate number... tom is that u` },
+    { who: '🟡 @kimbo',    t: 'it is 100% tom lmao' },
+    { who: '🟢 @PLANTQUEEN_Sam', t: 'tom??? bro come on' },
+  ],
+];
+const RECOGNITION_FOLLOWUP = [
+  { who: '🟡 @kimbo', t: 'tom we literally watched you walk in there' },
+  { who: '🔵 @dan3c', t: 'bro just get an EV. i am begging.' },
+  { who: '🟢 @maya_g', t: 'the billboard has been showing your name for 20 min straight tom' },
+  { who: '🟠 @jo4c', t: 'tom your carbon score is giving me anxiety' },
+];
+let recognitionFired = false;
+function maybeFireRecognition() {
+  if (recognitionFired) return;
+  if (state.shame < 6) return;
+  recognitionFired = true;
+  const seq = randPick(RECOGNITION_LINES);
+  seq.forEach((m, i) => {
+    setTimeout(() => feedMsg('user', m.who, m.t), 2000 + i * 5000);
+  });
+  // fire follow-up later
+  setTimeout(() => {
+    const f = randPick(RECOGNITION_FOLLOWUP);
+    feedMsg('user', f.who, f.t);
+  }, 2000 + seq.length * 5000 + 5000);
+}
+const _origUpdateStats = updateStats;
+updateStats = function() {
+  _origUpdateStats();
+  maybeFireRecognition();
+};
+
+setInterval(() => {
+  if (Math.random() < 0.3) {
+    const m = randPick(AMBIENT);
+    feedMsg('user', m.who, m.t);
+  }
+}, 35000);
+
+// ================ VN DIALOG ================
+const NPC_PROFILES = {
+  maya:   { name: 'MAYA · 4C-09',         shirt: '#8fd87a', hair: '#3a2416', skin: '#e8c496', pitch: 1.3 },
+  dan:    { name: 'DAN · 3C-04',          shirt: '#3498db', hair: '#c0392b', skin: '#e8c496', pitch: 0.8 },
+  kim:    { name: 'KIM · 5C-11',          shirt: '#f4837a', hair: '#d4c4a8', skin: '#f0cba0', pitch: 1.2 },
+  jo:     { name: 'JO · 4C-22',           shirt: '#d4dc42', hair: '#6b4a2a', skin: '#d4a574', pitch: 0.9 },
+  chad:   { name: 'CHAD · MEGA MOTORS',   shirt: '#d4a040', hair: '#d4dc42', skin: '#e8c496', pitch: 0.75 },
+  banker: { name: 'MR. WELLS · BANK MGR',  shirt: '#d4c4a8', hair: '#3a3a3a', skin: '#f0cba0', pitch: 0.7 },
+  brenda: { name: 'BRENDA · DREAM HOMES', shirt: '#8d6e52', hair: '#c0392b', skin: '#e8c496', pitch: 1.15 },
+};
+function portraitSVG(p) {
+  return `<svg viewBox="0 0 22 22" shape-rendering="crispEdges" style="width:100%;height:100%">
+    <rect width="22" height="22" fill="#fff8ef"/>
+    <rect x="6" y="3" width="10" height="2" fill="${p.hair}"/>
+    <rect x="5" y="5" width="12" height="2" fill="${p.hair}"/>
+    <rect x="5" y="7" width="12" height="6" fill="${p.skin}"/>
+    <rect x="5" y="7" width="2" height="2" fill="${p.hair}"/>
+    <rect x="15" y="7" width="2" height="2" fill="${p.hair}"/>
+    <rect x="8" y="9" width="2" height="2" fill="#000"/>
+    <rect x="12" y="9" width="2" height="2" fill="#000"/>
+    <rect x="10" y="12" width="2" height="1" fill="#a04040"/>
+    <rect x="3" y="13" width="16" height="9" fill="${p.shirt}"/>
+  </svg>`;
+}
+const NPC_DIALOGS = {
+  clean: {
+    maya: ["Hey! You're the new 4C-12 right?", "Fair warning — keep it under six kilos and nobody cares.", "Go over? The whole block finds out. Like, instantly."],
+    dan:  ["yo what's good. just moved in?", "heads up — every screen on this block pulls your kg live.", "your business is literally everyone's business here. welcome lol."],
+    kim:  ["Oh you're new? Cool.", "One thing — the leaderboard outside already has your unit on it.", "If you hit red, the group chat knows before YOU do."],
+    jo:   ["Hey.", "Six kilos a day. Stay under that and you're invisible.", "That's the dream."],
+  },
+  dirty: {
+    maya: ["...oh. It's you.", "Your handle's been on the billboard all morning.", "Six kilos. That's literally all we asked. Come on."],
+    dan:  ["bro.", "BRO.", "we watched your kg tick up in real time in the group chat.", "tom. we all know it's you."],
+    kim:  ["You're in the red half of the board.", "Three neighbors asked if I know the guy with the massive carbon score.", "I said no. Please fix this."],
+    jo:   ["I'm not gonna lecture you.", "But my phone buzzed four times today with YOUR name attached.", "Four times. Think about that."],
+  },
+};
+let vnQueue = [], vnTyping = false, vnTypeTimer = null, vnFullText = '', vnCurrentPitch = 1.0;
+let vnCallback = null; // optional callback after VN sequence ends
+function talkTo(key) {
+  initAudio();
+  const p = NPC_PROFILES[key]; if (!p) return;
+  const set = state.shame >= 6 ? NPC_DIALOGS.dirty : NPC_DIALOGS.clean;
+  if (!set[key]) return;
+  vnQueue = [...set[key]];
+  vnCurrentPitch = p.pitch || 1.0;
+  vnCallback = null;
+  document.getElementById('vn-name').textContent = p.name;
+  document.getElementById('vn-portrait').innerHTML = portraitSVG(p);
+  document.getElementById('vn').classList.add('open');
+  clickSfx();
+  vnNext();
+}
+// Start a VN sequence with explicit lines and character key
+function startVNSequence(lines, callback) {
+  initAudio();
+  // lines = [{char:'chad', text:'...'}, ...]
+  vnCallback = callback || null;
+  vnSequenceLines = lines;
+  vnSequenceIdx = 0;
+  advanceVNSequence();
+}
+let vnSequenceLines = [], vnSequenceIdx = 0;
+function advanceVNSequence() {
+  if (vnSequenceIdx >= vnSequenceLines.length) {
+    document.getElementById('vn').classList.remove('open');
+    if (vnCallback) { const cb = vnCallback; vnCallback = null; cb(); }
+    return;
+  }
+  const entry = vnSequenceLines[vnSequenceIdx];
+  const p = NPC_PROFILES[entry.char];
+  if (p) {
+    vnCurrentPitch = p.pitch || 1.0;
+    document.getElementById('vn-name').textContent = p.name;
+    document.getElementById('vn-portrait').innerHTML = portraitSVG(p);
+  }
+  vnQueue = [entry.text];
+  document.getElementById('vn').classList.add('open');
+  vnSequenceIdx++;
+  vnNext();
+}
+// Override vnNext end behavior to chain sequence
+const _origVnNext = null; // we'll handle it in vnAdvance
+function vnNext() {
+  if (vnQueue.length === 0) {
+    // If in sequence mode, advance to next character/line
+    if (vnSequenceLines.length > 0 && vnSequenceIdx < vnSequenceLines.length) {
+      advanceVNSequence();
+      return;
+    }
+    document.getElementById('vn').classList.remove('open');
+    if (vnCallback) { const cb = vnCallback; vnCallback = null; cb(); }
+    vnSequenceLines = []; vnSequenceIdx = 0;
+    return;
+  }
+  const line = vnQueue.shift();
+  vnFullText = line;
+  const txtEl = document.getElementById('vn-text');
+  txtEl.textContent = '';
+  vnTyping = true;
+  document.getElementById('vn-next').style.display = 'none';
+  let i = 0;
+  if (vnTypeTimer) clearInterval(vnTypeTimer);
+  vnTypeTimer = setInterval(() => {
+    if (i >= line.length) {
+      clearInterval(vnTypeTimer);
+      vnTyping = false;
+      document.getElementById('vn-next').style.display = 'block';
+      return;
+    }
+    const ch = line[i++];
+    txtEl.textContent = line.slice(0, i);
+    if (ch && ch.trim() && Math.random() < 0.25) gibberish(vnCurrentPitch || 1.0);
+  }, 24);
+}
+function vnAdvance() {
+  clickSfx();
+  if (vnTyping) {
+    clearInterval(vnTypeTimer);
+    document.getElementById('vn-text').textContent = vnFullText;
+    vnTyping = false;
+    document.getElementById('vn-next').style.display = 'block';
+    return;
+  }
+  vnNext();
+}
+const NPC_KEYS = ['maya', 'dan', 'kim', 'jo'];
+document.querySelectorAll('.npc').forEach((n, i) => {
+  const key = NPC_KEYS[i % 4];
+  n.style.cursor = 'pointer';
+  n.title = 'click to talk';
+  n.addEventListener('click', (e) => { e.stopPropagation(); talkTo(key); });
+});
+// Global click sfx on interactive elements
+document.addEventListener('click', (e) => {
+  if (e.target.closest('button, .location, .npc')) clickSfx();
+});
+</script>
+
+</body>
+</html>
