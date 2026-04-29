@@ -245,8 +245,8 @@
     overflow: hidden;
     min-height: 0;
   }
-  #sidebar > div { flex-shrink: 0; }
-  #sidebar > div.chat-wrap { flex: 1 1 auto; min-height: 180px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+  #sidebar > div { flex-shrink: 1; }
+  #sidebar > div.chat-wrap { flex: 3 1 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
   .panel-title {
     font-family: 'Nunito', sans-serif;
     font-size: 16px;
@@ -299,6 +299,7 @@
     font-family: 'Nunito', sans-serif;
     font-size: 14px;
     flex-wrap: nowrap;
+    text-align: left;
   }
   .budget-row .l { color: #7a6a5a; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .budget-row .v { color: #4a3728; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
@@ -348,17 +349,18 @@
     50% { transform: translateX(-1px); }
   }
   .stat {
+    margin-top: 4px;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 8px;
+    gap: 10px;
     font-family: 'Nunito', sans-serif;
-    font-size: 18px;
-    padding: 4px 0;
-    border-bottom: 1px dotted #d4c4a8;
+    font-size: 14px;
+    flex-wrap: nowrap;
+    text-align: left;
   }
   .stat .l { color: #7a6a5a; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .stat .v { color: #4a3728; font-weight: bold; white-space: nowrap; flex-shrink: 0; font-size: 19px; }
+  .stat .v { color: #4a3728; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
   .stat .v.bad { color: #f09080; }
 
   /* BLOCK FEED — redesigned as chat */
@@ -368,8 +370,8 @@
     padding: 12px;
     font-family: 'Nunito', sans-serif;
     font-size: 17px;
-    flex: 1 1 auto;
-    min-height: 140px;
+    flex: 1 1 0;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -1616,18 +1618,15 @@
           <span class="l">Over by</span>
           <span class="v ok" id="budget-over">0.0 kg (0%)</span>
         </div>
+        <div class="stat"><span class="l">CO₂e</span><span class="v" id="stat-co2">0.0 kg</span></div>
+        <div class="stat"><span class="l">Shame</span><span class="v" id="stat-shame">0</span></div>
+        <div class="stat"><span class="l">Witnesses</span><span class="v" id="stat-wit">0</span></div>
         <div class="impact-box" id="impact-box">
           <span class="big" id="impact-headline">Within safe zone ✓</span>
           <div id="impact-body">Your emissions today are under the 6 kg/day personal climate budget. Keep it up.</div>
           <div class="bears" id="impact-bears"></div>
         </div>
       </div>
-    </div>
-    <div>
-      <div class="panel-title">Today</div>
-      <div class="stat"><span class="l">CO₂e</span><span class="v" id="stat-co2">0.0 kg</span></div>
-      <div class="stat"><span class="l">Shame</span><span class="v" id="stat-shame">0</span></div>
-      <div class="stat"><span class="l">Witnesses</span><span class="v" id="stat-wit">0</span></div>
     </div>
     <div>
       <div class="panel-title">Block Leaderboard</div>
@@ -1647,7 +1646,7 @@
     <button class="scene-close" onclick="closeModal()">X</button>
     <div class="gas-bill">
       <div class="gas-tiny">PUBLIC BILLBOARD · PUMP <span id="gas-pump">04</span></div>
-      <div class="gas-big" id="gas-big">+42 kg</div>
+      <div class="gas-big" id="gas-big">+2.8 kg</div>
       <div class="gas-sub">PLATE <b id="gas-plate">JX-7742</b> · FILL #<b id="gas-count">3</b> THIS MONTH</div>
       <div class="gas-caption" id="gas-caption">Every driver on Main St. can see this.</div>
       <div class="gas-loud"><span class="speaker">📢</span><span id="gas-loud-text">"Plate JX-7742, pump 4, 42 kilograms."</span></div>
@@ -1777,20 +1776,20 @@
     <div class="gas-bill" style="padding-bottom:20px;">
       <div class="gas-tiny">PUBLIC SHOWROOM · MEGA MOTORS</div>
       <div style="display:flex; gap:20px; justify-content:center; margin:18px 0; flex-wrap:wrap;">
-        <div style="background:#fff8ef; border:2px solid #c4b49e; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyVehicle('sedan',22)" id="car-sedan">
+        <div style="background:#fff8ef; border:2px solid #c4b49e; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyVehicle('sedan',2.4)" id="car-sedan">
           <div style="font-size:36px;">🚗</div>
           <div style="font-family:'Nunito'; font-size:9px; color:#8fd87a; margin:6px 0;">SEDAN</div>
-          <div style="font-family:'Nunito'; font-size:16px; color:#b5c5b8;">+22 kg CO₂e</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#b5c5b8;">+2.4 kg CO₂e</div>
         </div>
-        <div style="background:#fff8ef; border:2px solid #f4837a; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyVehicle('SUV',55)" id="car-suv">
+        <div style="background:#fff8ef; border:2px solid #f4837a; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyVehicle('SUV',4.8)" id="car-suv">
           <div style="font-size:36px;">🚙</div>
           <div style="font-family:'Nunito'; font-size:9px; color:#d4dc42; margin:6px 0;">SUV</div>
-          <div style="font-family:'Nunito'; font-size:16px; color:#ff6b5b;">+55 kg CO₂e</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#ff6b5b;">+4.8 kg CO₂e</div>
         </div>
-        <div style="background:#fff8ef; border:3px solid #f4837a; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px; animation:flash 1.2s infinite;" onclick="buyVehicle('SPORTS CAR',88)" id="car-sports">
+        <div style="background:#fff8ef; border:3px solid #f4837a; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px; animation:flash 1.2s infinite;" onclick="buyVehicle('SPORTS CAR',7.2)" id="car-sports">
           <div style="font-size:36px;">🏎️</div>
           <div style="font-family:'Nunito'; font-size:9px; color:#ff6b5b; margin:6px 0;">SPORTS</div>
-          <div style="font-family:'Nunito'; font-size:16px; color:#ff6b5b;">+88 kg CO₂e</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#ff6b5b;">+7.2 kg CO₂e</div>
         </div>
       </div>
       <div class="gas-caption" id="dealer-caption">The billboard updates the second you sign.</div>
@@ -1845,20 +1844,20 @@
     <div class="gas-bill" style="padding-bottom:20px;">
       <div class="gas-tiny">DREAM HOMES REALTY · PUBLIC LISTING</div>
       <div style="display:flex; gap:20px; justify-content:center; margin:18px 0; flex-wrap:wrap;">
-        <div style="background:#fff8ef; border:2px solid #c4b49e; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyHome('STUDIO',8)">
+        <div style="background:#fff8ef; border:2px solid #c4b49e; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyHome('STUDIO',0.8)">
           <div style="font-size:36px;">🏢</div>
           <div style="font-family:'Nunito'; font-size:9px; color:#8fd87a; margin:6px 0;">STUDIO</div>
-          <div style="font-family:'Nunito'; font-size:16px; color:#b5c5b8;">+8 kg CO₂e</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#b5c5b8;">+0.8 kg CO₂e</div>
         </div>
-        <div style="background:#fff8ef; border:2px solid #d4dc42; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyHome('HOUSE',30)">
+        <div style="background:#fff8ef; border:2px solid #d4dc42; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px;" onclick="buyHome('HOUSE',2.5)">
           <div style="font-size:36px;">🏠</div>
           <div style="font-family:'Nunito'; font-size:9px; color:#d4dc42; margin:6px 0;">HOUSE</div>
-          <div style="font-family:'Nunito'; font-size:16px; color:#d4dc42;">+30 kg CO₂e</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#d4dc42;">+2.5 kg CO₂e</div>
         </div>
-        <div style="background:#fff8ef; border:3px solid #f4837a; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px; animation:flash 1.2s infinite;" onclick="buyHome('MANSION',120)">
+        <div style="background:#fff8ef; border:3px solid #f4837a; padding:14px 18px; text-align:center; cursor:pointer; min-width:120px; animation:flash 1.2s infinite;" onclick="buyHome('MANSION',6.0)">
           <div style="font-size:36px;">🏰</div>
           <div style="font-family:'Nunito'; font-size:9px; color:#ff6b5b; margin:6px 0;">MANSION</div>
-          <div style="font-family:'Nunito'; font-size:16px; color:#ff6b5b;">+120 kg CO₂e</div>
+          <div style="font-family:'Nunito'; font-size:16px; color:#ff6b5b;">+6.0 kg CO₂e</div>
         </div>
       </div>
       <div class="gas-caption" id="estate-caption">Your HOA gets a push notification with your carbon profile.</div>
@@ -1892,7 +1891,7 @@ const HANDLE_POOL = [
 
 // ================ RANDOM DATA ================
 const PLATES = ['JX-7742','KM-4419','PL-2086','TR-9903','BB-1175','WX-5540','ZC-8821'];
-const GAS_AMOUNTS = [32, 38, 42, 47, 51, 58, 63];
+const GAS_AMOUNTS = [1.2, 1.8, 2.3, 2.8, 3.2, 3.8, 4.5];
 const PUMPS = ['01','02','03','04','05','06'];
 const GAS_CAPTIONS = [
   'Every driver on Main St. can see this.',
@@ -1910,35 +1909,35 @@ const GAS_BUBBLES = [
 ];
 const MKT_POOLS = [
   [
-    { n: 'Ribeye x2', c: 12.4, hi: true },
-    { n: 'Avocado (Chile)', c: 2.1, hi: true },
-    { n: 'Berries (air)', c: 3.8, hi: true },
+    { n: 'Ribeye x2', c: 2.1, hi: true },
+    { n: 'Avocado (Chile)', c: 0.5, hi: true },
+    { n: 'Berries (air)', c: 0.6, hi: true },
     { n: 'Kale', c: 0.1, hi: false },
-    { n: 'Almond milk', c: 0.4, hi: false },
-    { n: 'PET water x6', c: 0.9, hi: false },
-    { n: 'Pasta x2', c: 0.3, hi: false },
+    { n: 'Almond milk', c: 0.3, hi: false },
+    { n: 'PET water x6', c: 0.4, hi: false },
+    { n: 'Pasta x2', c: 0.2, hi: false },
   ],
   [
-    { n: 'Lamb chops', c: 15.2, hi: true },
-    { n: 'Cheese wheel', c: 4.1, hi: true },
-    { n: 'Mangoes (air)', c: 2.4, hi: true },
-    { n: 'Sourdough', c: 0.3, hi: false },
+    { n: 'Lamb chops', c: 2.4, hi: true },
+    { n: 'Cheese wheel', c: 0.7, hi: true },
+    { n: 'Mangoes (air)', c: 0.5, hi: true },
+    { n: 'Sourdough', c: 0.1, hi: false },
     { n: 'Spinach', c: 0.1, hi: false },
-    { n: 'Oat milk', c: 0.2, hi: false },
+    { n: 'Oat milk', c: 0.1, hi: false },
   ],
   [
-    { n: 'Wagyu x1', c: 18.8, hi: true },
-    { n: 'Shrimp (frozen)', c: 6.2, hi: true },
-    { n: 'Cherries (air)', c: 3.1, hi: true },
-    { n: 'Lemons', c: 0.2, hi: false },
-    { n: 'Rice 5kg', c: 0.4, hi: false },
+    { n: 'Wagyu x1', c: 3.0, hi: true },
+    { n: 'Shrimp (frozen)', c: 1.0, hi: true },
+    { n: 'Cherries (air)', c: 0.5, hi: true },
+    { n: 'Lemons', c: 0.1, hi: false },
+    { n: 'Rice 5kg', c: 0.2, hi: false },
   ],
   [
-    { n: 'Pork belly x2', c: 7.4, hi: true },
-    { n: 'Parmesan', c: 3.6, hi: true },
-    { n: 'Salmon (farmed)', c: 4.2, hi: true },
-    { n: 'Tomatoes (heated gh)', c: 2.8, hi: true },
-    { n: 'Pasta', c: 0.2, hi: false },
+    { n: 'Pork belly x2', c: 1.4, hi: true },
+    { n: 'Parmesan', c: 0.6, hi: true },
+    { n: 'Salmon (farmed)', c: 0.8, hi: true },
+    { n: 'Tomatoes (heated gh)', c: 0.4, hi: true },
+    { n: 'Pasta', c: 0.1, hi: false },
   ],
 ];
 const CASHIER_LINES = [
@@ -2294,8 +2293,8 @@ function setupParking() {
   yell.textContent = randPick(DRIVER_YELLS);
   honk.innerHTML = '';
 
-  // Check carbon grade — only stall if grade is C or worse (co2 > 12)
-  const isHighCarbon = state.co2 > 12;
+  // Check carbon grade — only stall if grade is C or worse (co2 > 8)
+  const isHighCarbon = state.co2 > 8;
 
   if (!isHighCarbon) {
     // Good grade — gate opens immediately, no drama
@@ -2833,8 +2832,8 @@ const FRIENDLY_REACTIONS = {
 
 function getReactionStage(scene) {
   const v = state.visits[scene];
-  // If grade is C or above (co2 <= 24), use friendly reactions
-  if (state.co2 <= 24) {
+  // If grade is C or above (co2 <= 14), use friendly reactions
+  if (state.co2 <= 14) {
     const friendly = FRIENDLY_REACTIONS[scene];
     return friendly[Math.min(v, friendly.length - 1)];
   }
@@ -2850,7 +2849,7 @@ function resolveScene(name) {
   let ctx = { plate: state.plate };
 
   if (name === 'gas') {
-    co2 = gasRandom.amount || 42;
+    co2 = gasRandom.amount || 5;
     shame = 18; wit = 16;
     ctx.co2 = co2;
     ctx.pump = gasRandom.pump;
@@ -2859,18 +2858,18 @@ function resolveScene(name) {
     shame = 14; wit = 6;
     ctx.co2 = co2;
   } else if (name === 'parking') {
-    co2 = 3; shame = 8; wit = 4;
+    co2 = 0.5; shame = 8; wit = 4;
     ctx.count = state.visits.parking;
   } else if (name === 'trash') {
-    co2 = 6; shame = 12; wit = 3;
+    co2 = 1.2; shame = 12; wit = 3;
   } else if (name === 'dealer') {
-    co2 = dealerRandom.co2 || 22;
+    co2 = dealerRandom.co2 || 4.5;
     shame = 20; wit = 12;
     ctx.co2 = co2; ctx.type = dealerRandom.type || 'vehicle';
   } else if (name === 'bank') {
-    co2 = 2; shame = 16; wit = 8;
+    co2 = 0.3; shame = 16; wit = 8;
   } else if (name === 'estate') {
-    co2 = estateRandom.co2 || 8;
+    co2 = estateRandom.co2 || 1.5;
     shame = 22; wit = 14;
     ctx.co2 = co2; ctx.type = estateRandom.type || 'property';
   }
@@ -2930,11 +2929,12 @@ const DAILY_BUDGET = 6.0; // kg CO2/day personal climate budget
 // We scale dramatically so the bears respond to normal-scale day: 1 bear per 15kg overshoot
 const BEARS_TOTAL = 10;
 const grades = [
-  { max: 3,  g: 'A+', l: 'MODEL CITIZEN', c: '#8fd87a' },
-  { max: 6,  g: 'A',  l: 'WITHIN BUDGET', c: '#8fd87a' },
-  { max: 12, g: 'B',  l: 'OVER BUDGET',   c: '#d4dc42' },
-  { max: 24, g: 'C',  l: 'HIGH-EMITTER',  c: '#f39c12' },
-  { max: 50, g: 'D',  l: 'CLIMATE DRAG',  c: '#ff6b5b' },
+  { max: 2,  g: 'A+', l: 'MODEL CITIZEN', c: '#8fd87a' },
+  { max: 4,  g: 'A',  l: 'WITHIN BUDGET', c: '#8fd87a' },
+  { max: 8,  g: 'B',  l: 'SLIGHTLY OVER', c: '#d4dc42' },
+  { max: 14, g: 'C',  l: 'OVER BUDGET',   c: '#f39c12' },
+  { max: 22, g: 'D',  l: 'HIGH-EMITTER',  c: '#ff6b5b' },
+  { max: 35, g: 'E',  l: 'CLIMATE DRAG',  c: '#f4837a' },
   { max: 9999,g: 'F', l: 'PUBLIC CONCERN',c: '#f4837a' },
 ];
 function updateStats() {
@@ -2972,8 +2972,8 @@ function updateStats() {
   const headline = document.getElementById('impact-headline');
   const body = document.getElementById('impact-body');
   const bearsEl = document.getElementById('impact-bears');
-  // polar bears killed: 1 per 15kg overshoot (fictional dramatic rate)
-  const bearsKilled = Math.min(BEARS_TOTAL, Math.floor(over / 10));
+  // polar bears killed: 1 per 25kg overshoot (gradual)
+  const bearsKilled = Math.min(BEARS_TOTAL, Math.floor(over / 25));
   const dying = over > 0 && bearsKilled < BEARS_TOTAL ? 1 : 0;
 
   if (over <= 0) {
